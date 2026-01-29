@@ -1,0 +1,18 @@
+[2026-01-26 22:08:26] Program.cs: Creating theme-debug.txt file
+[2026-01-26 22:08:26] Program.cs: About to apply theme
+[2026-01-26 22:08:26] App.OnStartup: About to create ThemeManager
+[2026-01-26 22:08:26] ThemeManager created. Dark mode: True
+[2026-01-26 22:08:26] App.OnStartup: ThemeManager created, calling Initialize
+[2026-01-26 22:08:26] ApplyTheme() called. isDark: True
+[2026-01-26 22:08:26] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
+[2026-01-26 22:08:26] App.TryFindResource successful: #FF1E1E1E
+[2026-01-26 22:08:26] App.OnStartup: ThemeManager initialized, setting up watcher
+[2026-01-26 22:08:26] App.OnStartup: ThemeManager setup complete
+[2026-01-26 22:08:28] Program.cs: On UI thread, checking theme
+[2026-01-26 22:08:28] Program.cs: Manually applying theme
+[2026-01-26 22:08:28] ThemeManager created. Dark mode: True
+[2026-01-26 22:08:28] ApplyTheme() called. isDark: True
+[2026-01-26 22:08:29] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
+[2026-01-26 22:08:29] App.TryFindResource successful: #FF1E1E1E
+[2026-01-26 22:08:29] Program.cs: Theme applied successfully
+[2026-01-26 22:08:29] Program.cs: Theme application complete

@@ -1,0 +1,708 @@
+[2026-01-25 16:21:38] Application starting. Args: 
+[2026-01-25 16:21:38] Launching GUI mode
+[2026-01-25 16:21:38] App initialized, creating MainWindow
+[2026-01-25 16:21:39] MainWindow created, running application
+[2026-01-25 16:24:48] Application starting. Args: 
+[2026-01-25 16:24:48] Launching GUI mode
+[2026-01-25 16:24:48] App initialized, creating MainWindow
+[2026-01-25 16:24:49] MainWindow created, running application
+[2026-01-25 16:26:43] Application starting. Args: 
+[2026-01-25 16:26:43] Launching GUI mode
+[2026-01-25 16:26:43] App initialized, creating MainWindow
+[2026-01-25 16:26:44] MainWindow created, running application
+[2026-01-25 16:28:28] Application starting. Args: 
+[2026-01-25 16:28:28] Launching GUI mode
+[2026-01-25 16:28:28] === NEW BUILD - Theme code active ===
+[2026-01-25 16:28:28] App created and initialized
+[2026-01-25 16:28:28] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:28:28] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:28:28] About to apply theme on UI thread
+[2026-01-25 16:28:28] On UI thread, ensuring theme is applied
+[2026-01-25 16:28:28] Manually applying theme
+[2026-01-25 16:28:28] Theme application complete
+[2026-01-25 16:28:28] Creating MainWindow
+[2026-01-25 16:28:28] MainWindow created, running application
+[2026-01-25 16:30:25] Application starting. Args: 
+[2026-01-25 16:30:25] Launching GUI mode
+[2026-01-25 16:30:25] === NEW BUILD - Theme code active ===
+[2026-01-25 16:30:25] App created and initialized
+[2026-01-25 16:30:25] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:30:25] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:30:25] About to apply theme on UI thread
+[2026-01-25 16:30:25] On UI thread, ensuring theme is applied
+[2026-01-25 16:30:25] Manually applying theme
+[2026-01-25 16:30:25] Theme application complete
+[2026-01-25 16:30:25] Creating MainWindow
+[2026-01-25 16:30:25] MainWindow created, running application
+[2026-01-25 16:31:56] Application starting. Args: 
+[2026-01-25 16:31:56] Launching GUI mode
+[2026-01-25 16:31:56] === NEW BUILD - Theme code active ===
+[2026-01-25 16:31:56] App created and initialized
+[2026-01-25 16:31:56] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:31:56] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:31:56] About to apply theme on UI thread
+[2026-01-25 16:31:56] On UI thread, ensuring theme is applied
+[2026-01-25 16:31:56] Manually applying theme
+[2026-01-25 16:31:56] Theme application complete
+[2026-01-25 16:31:56] Creating MainWindow
+[2026-01-25 16:31:57] MainWindow created, running application
+[2026-01-25 16:36:13] Application starting. Args: 
+[2026-01-25 16:36:13] Launching GUI mode
+[2026-01-25 16:36:13] === NEW BUILD - Theme code active ===
+[2026-01-25 16:36:13] FATAL ERROR: 'Initialization of 'System.Windows.Setter' threw an exception.' Line number '173' and line position '10'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 16:36:50] Application starting. Args: 
+[2026-01-25 16:36:50] Launching GUI mode
+[2026-01-25 16:36:50] === NEW BUILD - Theme code active ===
+[2026-01-25 16:36:50] FATAL ERROR: 'Initialization of 'System.Windows.Setter' threw an exception.' Line number '173' and line position '10'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 16:38:02] Application starting. Args: 
+[2026-01-25 16:38:02] Launching GUI mode
+[2026-01-25 16:38:02] === NEW BUILD - Theme code active ===
+[2026-01-25 16:38:02] App created and initialized
+[2026-01-25 16:38:02] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:38:02] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:38:02] About to apply theme on UI thread
+[2026-01-25 16:38:02] On UI thread, ensuring theme is applied
+[2026-01-25 16:38:02] Manually applying theme
+[2026-01-25 16:38:02] Theme application complete
+[2026-01-25 16:38:02] Creating MainWindow
+[2026-01-25 16:38:02] MainWindow created, running application
+[2026-01-25 16:38:19] Application starting. Args: 
+[2026-01-25 16:38:19] Launching GUI mode
+[2026-01-25 16:38:19] === NEW BUILD - Theme code active ===
+[2026-01-25 16:38:19] App created and initialized
+[2026-01-25 16:38:19] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:38:19] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:38:19] About to apply theme on UI thread
+[2026-01-25 16:38:19] On UI thread, ensuring theme is applied
+[2026-01-25 16:38:19] Manually applying theme
+[2026-01-25 16:38:19] Theme application complete
+[2026-01-25 16:38:19] Creating MainWindow
+[2026-01-25 16:38:20] MainWindow created, running application
+[2026-01-25 16:40:33] Application starting. Args: 
+[2026-01-25 16:40:33] Launching GUI mode
+[2026-01-25 16:40:33] === NEW BUILD - Theme code active ===
+[2026-01-25 16:40:33] App created and initialized
+[2026-01-25 16:40:33] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:40:33] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:40:33] About to apply theme on UI thread
+[2026-01-25 16:40:33] On UI thread, ensuring theme is applied
+[2026-01-25 16:40:33] Manually applying theme
+[2026-01-25 16:40:33] Theme application complete
+[2026-01-25 16:40:33] Creating MainWindow
+[2026-01-25 16:40:34] MainWindow created successfully
+[2026-01-25 16:40:34] Running application
+[2026-01-25 16:41:32] Application starting. Args: 
+[2026-01-25 16:41:32] Launching GUI mode
+[2026-01-25 16:41:32] === NEW BUILD - Theme code active ===
+[2026-01-25 16:41:32] App created and initialized
+[2026-01-25 16:41:32] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:41:32] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:41:32] About to apply theme on UI thread
+[2026-01-25 16:41:32] On UI thread, ensuring theme is applied
+[2026-01-25 16:41:32] Manually applying theme
+[2026-01-25 16:41:32] Theme application complete
+[2026-01-25 16:41:32] Running application
+[2026-01-25 16:43:28] Application starting. Args: 
+[2026-01-25 16:43:28] Launching GUI mode
+[2026-01-25 16:43:28] === NEW BUILD - Theme code active ===
+[2026-01-25 16:43:29] App created and initialized
+[2026-01-25 16:43:29] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:43:29] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:43:29] About to apply theme on UI thread
+[2026-01-25 16:43:29] App.OnStartup: Creating MainWindow
+[2026-01-25 16:43:30] ERROR in App.OnStartup creating MainWindow: Cannot set unknown member 'System.Windows.Controls.ControlTemplate.Triggers'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, Uri baseUri)
+   at System.Windows.FrameworkTemplate.LoadTemplateXaml(XamlReader templateReader, XamlObjectWriter currentWriter)
+   at System.Windows.FrameworkTemplate.LoadOptimizedTemplateContent(DependencyObject container, IComponentConnector componentConnector, IStyleConnector styleConnector, List`1 affectedChildren, UncommonField`1 templatedNonFeChildrenField)
+   at System.Windows.FrameworkTemplate.LoadContent(DependencyObject container, List`1 affectedChildren)
+   at System.Windows.StyleHelper.ApplyTemplateContent(UncommonField`1 dataField, DependencyObject container, FrameworkElementFactory templateRoot, Int32 lastChildIndex, HybridDictionary childIndexFromChildID, FrameworkTemplate frameworkTemplate)
+   at System.Windows.FrameworkTemplate.ApplyTemplateContent(UncommonField`1 templateDataField, FrameworkElement container)
+   at System.Windows.FrameworkElement.ApplyTemplate()
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Primitives.Track.MeasureOverride(Size availableSize)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Grid.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Control.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Grid.MeasureCell(Int32 cell, Boolean forceInfinityV)
+   at System.Windows.Controls.Grid.MeasureCellsGroup(Int32 cellsHead, Size referenceSize, Boolean ignoreDesiredSizeU, Boolean forceInfinityV, Boolean& hasDesiredSizeUChanged)
+   at System.Windows.Controls.Grid.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.ScrollViewer.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Grid.MeasureCell(Int32 cell, Boolean forceInfinityV)
+   at System.Windows.Controls.Grid.MeasureCellsGroup(Int32 cellsHead, Size referenceSize, Boolean ignoreDesiredSizeU, Boolean forceInfinityV, Boolean& hasDesiredSizeUChanged)
+   at System.Windows.Controls.Grid.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at MS.Internal.Helper.MeasureElementWithSingleChild(UIElement element, Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Decorator.MeasureOverride(Size constraint)
+   at System.Windows.Documents.AdornerDecorator.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Border.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Window.MeasureOverrideHelper(Size constraint)
+   at System.Windows.Window.MeasureOverride(Size availableSize)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Interop.HwndSource.SetLayoutSize()
+   at System.Windows.Interop.HwndSource.set_RootVisualInternal(Visual value)
+   at System.Windows.Window.SetRootVisualAndUpdateSTC()
+   at System.Windows.Window.SafeCreateWindowDuringShow()
+   at System.Windows.Window.ShowHelper(Object booleanBox)
+   at System.Windows.Window.Show()
+   at WIMISODriverInjector.App.OnStartup(StartupEventArgs e) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml.cs:line 88
+[2026-01-25 16:43:30] On UI thread, ensuring theme is applied
+[2026-01-25 16:43:30] Manually applying theme
+[2026-01-25 16:44:59] Application starting. Args: 
+[2026-01-25 16:45:00] Launching GUI mode
+[2026-01-25 16:45:00] === NEW BUILD - Theme code active ===
+[2026-01-25 16:45:00] App created and initialized
+[2026-01-25 16:45:00] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:45:00] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:45:00] About to apply theme on UI thread
+[2026-01-25 16:45:00] App.OnStartup: Creating MainWindow
+[2026-01-25 16:45:01] App.OnStartup: MainWindow created and shown
+[2026-01-25 16:45:01] On UI thread, ensuring theme is applied
+[2026-01-25 16:45:01] Manually applying theme
+[2026-01-25 16:45:01] Theme application complete
+[2026-01-25 16:45:01] Running application
+[2026-01-25 16:52:47] Application starting. Args: 
+[2026-01-25 16:52:47] Launching GUI mode
+[2026-01-25 16:52:47] === NEW BUILD - Theme code active ===
+[2026-01-25 16:52:47] App created and initialized
+[2026-01-25 16:52:47] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:52:47] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:52:47] About to apply theme on UI thread
+[2026-01-25 16:52:47] App.OnStartup: Creating MainWindow
+[2026-01-25 16:52:48] App.OnStartup: MainWindow created and shown
+[2026-01-25 16:52:48] On UI thread, ensuring theme is applied
+[2026-01-25 16:52:48] Manually applying theme
+[2026-01-25 16:52:48] Theme application complete
+[2026-01-25 16:52:48] Running application
+[2026-01-25 16:57:32] Application starting. Args: 
+[2026-01-25 16:57:32] Launching GUI mode
+[2026-01-25 16:57:32] === NEW BUILD - Theme code active ===
+[2026-01-25 16:57:32] App created and initialized
+[2026-01-25 16:57:32] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 16:57:32] SUCCESS: Created theme-debug.txt file
+[2026-01-25 16:57:32] About to apply theme on UI thread
+[2026-01-25 16:57:32] App.OnStartup: Creating MainWindow
+[2026-01-25 16:57:33] App.OnStartup: MainWindow created and shown
+[2026-01-25 16:57:33] On UI thread, ensuring theme is applied
+[2026-01-25 16:57:33] Manually applying theme
+[2026-01-25 16:57:33] Theme application complete
+[2026-01-25 16:57:33] Running application
+[2026-01-25 17:28:19] Application starting. Args: 
+[2026-01-25 17:28:19] Launching GUI mode
+[2026-01-25 17:28:19] === NEW BUILD - Theme code active ===
+[2026-01-25 17:28:20] App created and initialized
+[2026-01-25 17:28:20] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 17:28:20] SUCCESS: Created theme-debug.txt file
+[2026-01-25 17:28:20] About to apply theme on UI thread
+[2026-01-25 17:28:20] App.OnStartup: Creating MainWindow
+[2026-01-25 17:28:21] App.OnStartup: MainWindow created and shown
+[2026-01-25 17:28:21] On UI thread, ensuring theme is applied
+[2026-01-25 17:28:21] Manually applying theme
+[2026-01-25 17:28:21] Theme application complete
+[2026-01-25 17:28:21] Running application
+[2026-01-25 17:48:12] Application starting. Args: 
+[2026-01-25 17:48:12] Launching GUI mode
+[2026-01-25 17:48:12] === NEW BUILD - Theme code active ===
+[2026-01-25 17:48:12] App created and initialized
+[2026-01-25 17:48:12] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 17:48:12] SUCCESS: Created theme-debug.txt file
+[2026-01-25 17:48:12] About to apply theme on UI thread
+[2026-01-25 17:48:12] App.OnStartup: Creating MainWindow
+[2026-01-25 17:48:13] App.OnStartup: MainWindow created and shown
+[2026-01-25 17:48:13] On UI thread, ensuring theme is applied
+[2026-01-25 17:48:13] Manually applying theme
+[2026-01-25 17:48:13] Theme application complete
+[2026-01-25 17:48:13] Running application
+[2026-01-25 18:12:09] Application starting. Args: 
+[2026-01-25 18:12:09] Launching GUI mode
+[2026-01-25 18:12:09] === NEW BUILD - Theme code active ===
+[2026-01-25 18:12:09] App created and initialized
+[2026-01-25 18:12:09] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 18:12:09] SUCCESS: Created theme-debug.txt file
+[2026-01-25 18:12:09] About to apply theme on UI thread
+[2026-01-25 18:12:09] App.OnStartup: Creating MainWindow
+[2026-01-25 18:12:10] App.OnStartup: MainWindow created and shown
+[2026-01-25 18:12:10] On UI thread, ensuring theme is applied
+[2026-01-25 18:12:10] Manually applying theme
+[2026-01-25 18:12:10] Theme application complete
+[2026-01-25 18:12:10] Running application
+[2026-01-25 18:32:01] Application starting. Args: 
+[2026-01-25 18:32:01] Launching GUI mode
+[2026-01-25 18:32:01] === NEW BUILD - Theme code active ===
+[2026-01-25 18:32:02] App created and initialized
+[2026-01-25 18:32:02] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 18:32:02] SUCCESS: Created theme-debug.txt file
+[2026-01-25 18:32:02] About to apply theme on UI thread
+[2026-01-25 18:32:02] App.OnStartup: Creating MainWindow
+[2026-01-25 18:32:03] App.OnStartup: MainWindow created and shown
+[2026-01-25 18:32:03] On UI thread, ensuring theme is applied
+[2026-01-25 18:32:03] Manually applying theme
+[2026-01-25 18:32:03] Theme application complete
+[2026-01-25 18:32:03] Running application
+[2026-01-25 19:43:07] Application starting. Args: 
+[2026-01-25 19:43:07] Launching GUI mode
+[2026-01-25 19:43:07] === NEW BUILD - Theme code active ===
+[2026-01-25 19:43:08] App created and initialized
+[2026-01-25 19:43:08] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 19:43:08] SUCCESS: Created theme-debug.txt file
+[2026-01-25 19:43:08] About to apply theme on UI thread
+[2026-01-25 19:43:08] App.OnStartup: Creating MainWindow
+[2026-01-25 19:43:09] App.OnStartup: MainWindow created and shown
+[2026-01-25 19:43:09] On UI thread, ensuring theme is applied
+[2026-01-25 19:43:09] Manually applying theme
+[2026-01-25 19:43:09] Theme application complete
+[2026-01-25 19:43:09] Running application
+[2026-01-25 19:48:20] Application starting. Args: 
+[2026-01-25 19:48:20] Launching GUI mode
+[2026-01-25 19:48:20] === NEW BUILD - Theme code active ===
+[2026-01-25 19:48:21] App created and initialized
+[2026-01-25 19:48:21] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 19:48:21] SUCCESS: Created theme-debug.txt file
+[2026-01-25 19:48:21] About to apply theme on UI thread
+[2026-01-25 19:48:21] App.OnStartup: Creating MainWindow
+[2026-01-25 19:48:21] App.OnStartup: MainWindow created and shown
+[2026-01-25 19:48:21] On UI thread, ensuring theme is applied
+[2026-01-25 19:48:21] Manually applying theme
+[2026-01-25 19:48:21] Theme application complete
+[2026-01-25 19:48:21] Running application
+[2026-01-25 20:01:25] Application starting. Args: 
+[2026-01-25 20:01:25] Launching GUI mode
+[2026-01-25 20:01:25] === NEW BUILD - Theme code active ===
+[2026-01-25 20:01:26] App created and initialized
+[2026-01-25 20:01:26] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:01:26] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:01:26] About to apply theme on UI thread
+[2026-01-25 20:01:26] App.OnStartup: Creating MainWindow
+[2026-01-25 20:01:28] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:01:28] On UI thread, ensuring theme is applied
+[2026-01-25 20:01:28] Manually applying theme
+[2026-01-25 20:01:28] Theme application complete
+[2026-01-25 20:01:28] Running application
+[2026-01-25 20:10:26] Application starting. Args: 
+[2026-01-25 20:10:26] Launching GUI mode
+[2026-01-25 20:10:26] === NEW BUILD - Theme code active ===
+[2026-01-25 20:10:26] FATAL ERROR: Cannot find resource named 'ComboBoxItemStyle'. Resource names are case sensitive.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 20:10:52] Application starting. Args: 
+[2026-01-25 20:10:52] Launching GUI mode
+[2026-01-25 20:10:52] === NEW BUILD - Theme code active ===
+[2026-01-25 20:10:53] FATAL ERROR: Cannot find resource named 'ComboBoxItemStyle'. Resource names are case sensitive.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 20:12:37] Application starting. Args: 
+[2026-01-25 20:12:37] Launching GUI mode
+[2026-01-25 20:12:37] === NEW BUILD - Theme code active ===
+[2026-01-25 20:12:37] App created and initialized
+[2026-01-25 20:12:37] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:12:37] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:12:37] About to apply theme on UI thread
+[2026-01-25 20:12:38] App.OnStartup: Creating MainWindow
+[2026-01-25 20:12:39] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:12:40] On UI thread, ensuring theme is applied
+[2026-01-25 20:12:40] Manually applying theme
+[2026-01-25 20:12:40] Theme application complete
+[2026-01-25 20:12:40] Running application
+[2026-01-25 20:15:35] Application starting. Args: 
+[2026-01-25 20:15:35] Launching GUI mode
+[2026-01-25 20:15:35] === NEW BUILD - Theme code active ===
+[2026-01-25 20:15:36] App created and initialized
+[2026-01-25 20:15:36] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:15:36] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:15:36] About to apply theme on UI thread
+[2026-01-25 20:15:36] App.OnStartup: Creating MainWindow
+[2026-01-25 20:15:36] ERROR in App.OnStartup creating MainWindow: 'Content' property has already been set on 'ScrollViewer'.
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, IXamlLineInfo lineInfo, Uri baseUri)
+   at System.Windows.Markup.XamlReader.RewrapException(Exception e, Uri baseUri)
+   at System.Windows.FrameworkTemplate.LoadTemplateXaml(XamlReader templateReader, XamlObjectWriter currentWriter)
+   at System.Windows.FrameworkTemplate.LoadOptimizedTemplateContent(DependencyObject container, IComponentConnector componentConnector, IStyleConnector styleConnector, List`1 affectedChildren, UncommonField`1 templatedNonFeChildrenField)
+   at System.Windows.FrameworkTemplate.LoadContent(DependencyObject container, List`1 affectedChildren)
+   at System.Windows.StyleHelper.ApplyTemplateContent(UncommonField`1 dataField, DependencyObject container, FrameworkElementFactory templateRoot, Int32 lastChildIndex, HybridDictionary childIndexFromChildID, FrameworkTemplate frameworkTemplate)
+   at System.Windows.FrameworkTemplate.ApplyTemplateContent(UncommonField`1 templateDataField, FrameworkElement container)
+   at System.Windows.FrameworkElement.ApplyTemplate()
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.StackPanel.StackMeasureHelper(IStackMeasure measureElement, IStackMeasureScrollData scrollData, Size constraint)
+   at System.Windows.Controls.StackPanel.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.StackPanel.StackMeasureHelper(IStackMeasure measureElement, IStackMeasureScrollData scrollData, Size constraint)
+   at System.Windows.Controls.StackPanel.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Grid.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Grid.MeasureCell(Int32 cell, Boolean forceInfinityV)
+   at System.Windows.Controls.Grid.MeasureCellsGroup(Int32 cellsHead, Size referenceSize, Boolean ignoreDesiredSizeU, Boolean forceInfinityV, Boolean& hasDesiredSizeUChanged)
+   at System.Windows.Controls.Grid.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at MS.Internal.Helper.MeasureElementWithSingleChild(UIElement element, Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Decorator.MeasureOverride(Size constraint)
+   at System.Windows.Documents.AdornerDecorator.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Controls.Border.MeasureOverride(Size constraint)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Window.MeasureOverrideHelper(Size constraint)
+   at System.Windows.Window.MeasureOverride(Size availableSize)
+   at System.Windows.FrameworkElement.MeasureCore(Size availableSize)
+   at System.Windows.UIElement.Measure(Size availableSize)
+   at System.Windows.Interop.HwndSource.SetLayoutSize()
+   at System.Windows.Interop.HwndSource.set_RootVisualInternal(Visual value)
+   at System.Windows.Window.SetRootVisualAndUpdateSTC()
+   at System.Windows.Window.SafeCreateWindowDuringShow()
+   at System.Windows.Window.ShowHelper(Object booleanBox)
+   at System.Windows.Window.Show()
+   at WIMISODriverInjector.App.OnStartup(StartupEventArgs e) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml.cs:line 88
+[2026-01-25 20:15:37] On UI thread, ensuring theme is applied
+[2026-01-25 20:15:37] Manually applying theme
+[2026-01-25 20:15:41] Theme application complete
+[2026-01-25 20:15:41] Running application
+[2026-01-25 20:16:47] Application starting. Args: 
+[2026-01-25 20:16:47] Launching GUI mode
+[2026-01-25 20:16:47] === NEW BUILD - Theme code active ===
+[2026-01-25 20:16:48] App created and initialized
+[2026-01-25 20:16:48] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:16:48] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:16:48] About to apply theme on UI thread
+[2026-01-25 20:16:48] App.OnStartup: Creating MainWindow
+[2026-01-25 20:16:49] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:16:49] On UI thread, ensuring theme is applied
+[2026-01-25 20:16:49] Manually applying theme
+[2026-01-25 20:16:49] Theme application complete
+[2026-01-25 20:16:49] Running application
+[2026-01-25 20:18:59] Application starting. Args: 
+[2026-01-25 20:18:59] Launching GUI mode
+[2026-01-25 20:18:59] === NEW BUILD - Theme code active ===
+[2026-01-25 20:19:00] FATAL ERROR: Object reference not set to an instance of an object.
+   at MS.Internal.Xaml.Parser.MeScanner.Read()
+   at MS.Internal.Xaml.Parser.MePullParser.P_MarkupExtension(Found f)+MoveNext()
+   at MS.Internal.Xaml.Parser.MePullParser.Parse(String text, Int32 lineNumber, Int32 linePosition)+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.LogicStream_Attribute()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_EmptyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_NonemptyPropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_NonemptyPropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.Parse()+MoveNext()
+   at MS.Internal.Xaml.NodeStreamSorter.ReadAheadToEndOfAttributes()
+   at MS.Internal.Xaml.NodeStreamSorter.MoveNext()
+   at System.Xaml.XamlXmlReader.Read()
+   at System.Windows.Markup.WpfXamlLoader.TransformNodes(XamlReader xamlReader, XamlObjectWriter xamlWriter, Boolean onlyLoadOneNode, Boolean skipJournaledProperties, Boolean shouldPassLineNumberInfo, IXamlLineInfo xamlLineInfo, IXamlLineInfoConsumer xamlLineInfoConsumer, XamlContextStack`1 stack, IStyleConnector styleConnector)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, Boolean skipJournaledProperties, Uri baseUri)
+   at System.Windows.Markup.XamlReader.Load(XamlReader xamlReader, ParserContext parserContext)
+   at System.Windows.Markup.XamlReader.Load(XmlReader reader, ParserContext parserContext, XamlParseMode parseMode, Boolean useRestrictiveXamlReader, List`1 safeTypes)
+   at System.Windows.Markup.XamlReader.Load(Stream stream, ParserContext parserContext, Boolean useRestrictiveXamlReader)
+   at MS.Internal.AppModel.AppModelKnownContentFactory.XamlConverterCore(Stream stream, Uri baseUri, Boolean canUseTopLevelBrowser, Boolean sandboxExternalContent, Boolean allowAsync, Boolean isJournalNavigation, XamlReader& asyncObjectConverter, Boolean isUnsafe)
+   at MS.Internal.AppModel.MimeObjectFactory.GetObjectAndCloseStreamCore(Stream s, ContentType contentType, Uri baseUri, Boolean canUseTopLevelBrowser, Boolean sandboxExternalContent, Boolean allowAsync, Boolean isJournalNavigation, XamlReader& asyncObjectConverter, Boolean isUnsafe)
+   at System.Windows.ResourceDictionary.set_Source(Uri value)
+   at MS.Internal.Xaml.Runtime.ClrObjectRuntime.SetValue(Object inst, XamlMember property, Object value)
+   at System.Xaml.XamlObjectWriter.Logic_ApplyPropertyValue(ObjectWriterContext ctx, XamlMember prop, Object value, Boolean onParent)
+   at System.Xaml.XamlObjectWriter.Logic_DoAssignmentToParentProperty(ObjectWriterContext ctx)
+   at System.Xaml.XamlObjectWriter.WriteEndMember()
+   at System.Windows.Markup.WpfXamlLoader.TransformNodes(XamlReader xamlReader, XamlObjectWriter xamlWriter, Boolean onlyLoadOneNode, Boolean skipJournaledProperties, Boolean shouldPassLineNumberInfo, IXamlLineInfo xamlLineInfo, IXamlLineInfoConsumer xamlLineInfoConsumer, XamlContextStack`1 stack, IStyleConnector styleConnector)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 20:19:08] Application starting. Args: 
+[2026-01-25 20:19:09] Launching GUI mode
+[2026-01-25 20:19:09] === NEW BUILD - Theme code active ===
+[2026-01-25 20:19:09] FATAL ERROR: Object reference not set to an instance of an object.
+   at MS.Internal.Xaml.Parser.MeScanner.Read()
+   at MS.Internal.Xaml.Parser.MePullParser.P_MarkupExtension(Found f)+MoveNext()
+   at MS.Internal.Xaml.Parser.MePullParser.Parse(String text, Int32 lineNumber, Int32 linePosition)+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.LogicStream_Attribute()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_EmptyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_NonemptyPropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_NonemptyPropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_PropertyElement()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementContent()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_ElementBody()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.P_Element()+MoveNext()
+   at MS.Internal.Xaml.Parser.XamlPullParser.Parse()+MoveNext()
+   at MS.Internal.Xaml.NodeStreamSorter.ReadAheadToEndOfAttributes()
+   at MS.Internal.Xaml.NodeStreamSorter.MoveNext()
+   at System.Xaml.XamlXmlReader.Read()
+   at System.Windows.Markup.WpfXamlLoader.TransformNodes(XamlReader xamlReader, XamlObjectWriter xamlWriter, Boolean onlyLoadOneNode, Boolean skipJournaledProperties, Boolean shouldPassLineNumberInfo, IXamlLineInfo xamlLineInfo, IXamlLineInfoConsumer xamlLineInfoConsumer, XamlContextStack`1 stack, IStyleConnector styleConnector)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, Boolean skipJournaledProperties, Uri baseUri)
+   at System.Windows.Markup.XamlReader.Load(XamlReader xamlReader, ParserContext parserContext)
+   at System.Windows.Markup.XamlReader.Load(XmlReader reader, ParserContext parserContext, XamlParseMode parseMode, Boolean useRestrictiveXamlReader, List`1 safeTypes)
+   at System.Windows.Markup.XamlReader.Load(Stream stream, ParserContext parserContext, Boolean useRestrictiveXamlReader)
+   at MS.Internal.AppModel.AppModelKnownContentFactory.XamlConverterCore(Stream stream, Uri baseUri, Boolean canUseTopLevelBrowser, Boolean sandboxExternalContent, Boolean allowAsync, Boolean isJournalNavigation, XamlReader& asyncObjectConverter, Boolean isUnsafe)
+   at MS.Internal.AppModel.MimeObjectFactory.GetObjectAndCloseStreamCore(Stream s, ContentType contentType, Uri baseUri, Boolean canUseTopLevelBrowser, Boolean sandboxExternalContent, Boolean allowAsync, Boolean isJournalNavigation, XamlReader& asyncObjectConverter, Boolean isUnsafe)
+   at System.Windows.ResourceDictionary.set_Source(Uri value)
+   at MS.Internal.Xaml.Runtime.ClrObjectRuntime.SetValue(Object inst, XamlMember property, Object value)
+   at System.Xaml.XamlObjectWriter.Logic_ApplyPropertyValue(ObjectWriterContext ctx, XamlMember prop, Object value, Boolean onParent)
+   at System.Xaml.XamlObjectWriter.Logic_DoAssignmentToParentProperty(ObjectWriterContext ctx)
+   at System.Xaml.XamlObjectWriter.WriteEndMember()
+   at System.Windows.Markup.WpfXamlLoader.TransformNodes(XamlReader xamlReader, XamlObjectWriter xamlWriter, Boolean onlyLoadOneNode, Boolean skipJournaledProperties, Boolean shouldPassLineNumberInfo, IXamlLineInfo xamlLineInfo, IXamlLineInfoConsumer xamlLineInfoConsumer, XamlContextStack`1 stack, IStyleConnector styleConnector)
+   at System.Windows.Markup.WpfXamlLoader.Load(XamlReader xamlReader, IXamlObjectWriterFactory writerFactory, Boolean skipJournaledProperties, Object rootObject, XamlObjectWriterSettings settings, Uri baseUri)
+   at System.Windows.Markup.WpfXamlLoader.LoadBaml(XamlReader xamlReader, Boolean skipJournaledProperties, Object rootObject, XamlAccessLevel accessLevel, Uri baseUri)
+   at System.Windows.Markup.XamlReader.LoadBaml(Stream stream, ParserContext parserContext, Object parent, Boolean closeStream)
+   at System.Windows.Application.LoadComponent(Object component, Uri resourceLocator)
+   at WIMISODriverInjector.App.InitializeComponent() in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\App.xaml:line 1
+   at WIMISODriverInjector.Program.Main(String[] args) in C:\Users\steeb\WIM-ISO-Driver_Injector\WIMISODriverInjector\Program.cs:line 46
+[2026-01-25 20:21:15] Application starting. Args: 
+[2026-01-25 20:21:15] Launching GUI mode
+[2026-01-25 20:21:15] === NEW BUILD - Theme code active ===
+[2026-01-25 20:21:15] App created and initialized
+[2026-01-25 20:21:15] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:21:15] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:21:15] About to apply theme on UI thread
+[2026-01-25 20:21:15] App.OnStartup: Creating MainWindow
+[2026-01-25 20:21:17] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:21:17] On UI thread, ensuring theme is applied
+[2026-01-25 20:21:17] Manually applying theme
+[2026-01-25 20:21:17] Theme application complete
+[2026-01-25 20:21:17] Running application
+[2026-01-25 20:22:05] Application starting. Args: 
+[2026-01-25 20:22:05] Launching GUI mode
+[2026-01-25 20:22:05] === NEW BUILD - Theme code active ===
+[2026-01-25 20:22:06] App created and initialized
+[2026-01-25 20:22:06] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:22:06] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:22:06] About to apply theme on UI thread
+[2026-01-25 20:22:06] App.OnStartup: Creating MainWindow
+[2026-01-25 20:22:07] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:22:07] On UI thread, ensuring theme is applied
+[2026-01-25 20:22:07] Manually applying theme
+[2026-01-25 20:22:07] Theme application complete
+[2026-01-25 20:22:07] Running application
+[2026-01-25 20:30:29] Application starting. Args: 
+[2026-01-25 20:30:29] Launching GUI mode
+[2026-01-25 20:30:29] === NEW BUILD - Theme code active ===
+[2026-01-25 20:30:30] App created and initialized
+[2026-01-25 20:30:30] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:30:30] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:30:30] About to apply theme on UI thread
+[2026-01-25 20:30:30] App.OnStartup: Creating MainWindow
+[2026-01-25 20:30:31] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:30:31] On UI thread, ensuring theme is applied
+[2026-01-25 20:30:31] Manually applying theme
+[2026-01-25 20:30:31] Theme application complete
+[2026-01-25 20:30:31] Running application
+[2026-01-25 20:34:17] Application starting. Args: 
+[2026-01-25 20:34:17] Launching GUI mode
+[2026-01-25 20:34:17] === NEW BUILD - Theme code active ===
+[2026-01-25 20:34:18] App created and initialized
+[2026-01-25 20:34:18] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:34:18] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:34:18] About to apply theme on UI thread
+[2026-01-25 20:34:18] App.OnStartup: Creating MainWindow
+[2026-01-25 20:34:18] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:34:18] On UI thread, ensuring theme is applied
+[2026-01-25 20:34:18] Manually applying theme
+[2026-01-25 20:34:18] Theme application complete
+[2026-01-25 20:34:18] Running application
+[2026-01-25 20:36:33] Application starting. Args: 
+[2026-01-25 20:36:33] Launching GUI mode
+[2026-01-25 20:36:33] === NEW BUILD - Theme code active ===
+[2026-01-25 20:36:34] App created and initialized
+[2026-01-25 20:36:34] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:36:34] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:36:34] About to apply theme on UI thread
+[2026-01-25 20:36:34] App.OnStartup: Creating MainWindow
+[2026-01-25 20:36:34] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:36:34] On UI thread, ensuring theme is applied
+[2026-01-25 20:36:34] Manually applying theme
+[2026-01-25 20:36:34] Theme application complete
+[2026-01-25 20:36:34] Running application
+[2026-01-25 20:38:59] Application starting. Args: 
+[2026-01-25 20:38:59] Launching GUI mode
+[2026-01-25 20:38:59] === NEW BUILD - Theme code active ===
+[2026-01-25 20:38:59] App created and initialized
+[2026-01-25 20:38:59] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:38:59] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:38:59] About to apply theme on UI thread
+[2026-01-25 20:38:59] App.OnStartup: Creating MainWindow
+[2026-01-25 20:39:00] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:39:00] On UI thread, ensuring theme is applied
+[2026-01-25 20:39:00] Manually applying theme
+[2026-01-25 20:39:00] Theme application complete
+[2026-01-25 20:39:00] Running application
+[2026-01-25 20:40:25] Application starting. Args: 
+[2026-01-25 20:40:25] Launching GUI mode
+[2026-01-25 20:40:25] === NEW BUILD - Theme code active ===
+[2026-01-25 20:40:25] App created and initialized
+[2026-01-25 20:40:25] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:40:25] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:40:25] About to apply theme on UI thread
+[2026-01-25 20:40:25] App.OnStartup: Creating MainWindow
+[2026-01-25 20:40:26] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:40:26] On UI thread, ensuring theme is applied
+[2026-01-25 20:40:26] Manually applying theme
+[2026-01-25 20:40:26] Theme application complete
+[2026-01-25 20:40:26] Running application
+[2026-01-25 20:45:30] Application starting. Args: 
+[2026-01-25 20:45:30] Launching GUI mode
+[2026-01-25 20:45:30] === NEW BUILD - Theme code active ===
+[2026-01-25 20:45:32] App created and initialized
+[2026-01-25 20:45:32] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:45:32] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:45:32] About to apply theme on UI thread
+[2026-01-25 20:45:32] App.OnStartup: Creating MainWindow
+[2026-01-25 20:45:50] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:45:50] On UI thread, ensuring theme is applied
+[2026-01-25 20:45:50] Manually applying theme
+[2026-01-25 20:45:50] Theme application complete
+[2026-01-25 20:45:50] Running application
+[2026-01-25 20:49:56] Application starting. Args: 
+[2026-01-25 20:49:56] Launching GUI mode
+[2026-01-25 20:49:56] === NEW BUILD - Theme code active ===
+[2026-01-25 20:49:57] App created and initialized
+[2026-01-25 20:49:57] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:49:57] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:49:57] About to apply theme on UI thread
+[2026-01-25 20:49:57] App.OnStartup: Creating MainWindow
+[2026-01-25 20:49:58] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:49:58] On UI thread, ensuring theme is applied
+[2026-01-25 20:49:58] Manually applying theme
+[2026-01-25 20:49:58] Theme application complete
+[2026-01-25 20:49:58] Running application
+[2026-01-25 20:53:42] Application starting. Args: 
+[2026-01-25 20:53:42] Launching GUI mode
+[2026-01-25 20:53:42] === NEW BUILD - Theme code active ===
+[2026-01-25 20:53:43] App created and initialized
+[2026-01-25 20:53:43] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 20:53:43] SUCCESS: Created theme-debug.txt file
+[2026-01-25 20:53:43] About to apply theme on UI thread
+[2026-01-25 20:53:43] App.OnStartup: Creating MainWindow
+[2026-01-25 20:53:45] App.OnStartup: MainWindow created and shown
+[2026-01-25 20:53:45] On UI thread, ensuring theme is applied
+[2026-01-25 20:53:45] Manually applying theme
+[2026-01-25 20:53:45] Theme application complete
+[2026-01-25 20:53:45] Running application
+[2026-01-25 21:05:08] Application starting. Args: 
+[2026-01-25 21:05:08] Launching GUI mode
+[2026-01-25 21:05:08] === NEW BUILD - Theme code active ===
+[2026-01-25 21:05:08] App created and initialized
+[2026-01-25 21:05:08] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 21:05:08] SUCCESS: Created theme-debug.txt file
+[2026-01-25 21:05:08] About to apply theme on UI thread
+[2026-01-25 21:05:08] App.OnStartup: Creating MainWindow
+[2026-01-25 21:05:09] App.OnStartup: MainWindow created and shown
+[2026-01-25 21:05:09] On UI thread, ensuring theme is applied
+[2026-01-25 21:05:09] Manually applying theme
+[2026-01-25 21:05:09] Theme application complete
+[2026-01-25 21:05:09] Running application
+[2026-01-25 21:18:02] Application starting. Args: 
+[2026-01-25 21:18:02] Launching GUI mode
+[2026-01-25 21:18:02] === NEW BUILD - Theme code active ===
+[2026-01-25 21:18:02] App created and initialized
+[2026-01-25 21:18:02] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-25 21:18:02] SUCCESS: Created theme-debug.txt file
+[2026-01-25 21:18:02] About to apply theme on UI thread
+[2026-01-25 21:18:02] App.OnStartup: Creating MainWindow
+[2026-01-25 21:18:03] App.OnStartup: MainWindow created and shown
+[2026-01-25 21:18:03] On UI thread, ensuring theme is applied
+[2026-01-25 21:18:03] Manually applying theme
+[2026-01-25 21:18:03] Theme application complete
+[2026-01-25 21:18:03] Running application
+[2026-01-26 09:14:21] Application starting. Args: 
+[2026-01-26 09:14:21] Launching GUI mode
+[2026-01-26 09:14:21] === NEW BUILD - Theme code active ===
+[2026-01-26 09:14:21] App created and initialized
+[2026-01-26 09:14:21] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-26 09:14:21] SUCCESS: Created theme-debug.txt file
+[2026-01-26 09:14:21] About to apply theme on UI thread
+[2026-01-26 09:14:21] App.OnStartup: Creating MainWindow
+[2026-01-26 09:14:22] App.OnStartup: MainWindow created and shown
+[2026-01-26 09:14:22] On UI thread, ensuring theme is applied
+[2026-01-26 09:14:22] Manually applying theme
+[2026-01-26 09:14:22] Theme application complete
+[2026-01-26 09:14:22] Running application
+[2026-01-26 10:04:42] Application starting. Args: 
+[2026-01-26 10:04:43] Launching GUI mode
+[2026-01-26 10:04:43] === NEW BUILD - Theme code active ===
+[2026-01-26 10:04:43] App created and initialized
+[2026-01-26 10:04:43] Attempting to create theme-debug.txt at: C:\Users\steeb\WIM-ISO-Driver_Injector\theme-debug.txt
+[2026-01-26 10:04:43] SUCCESS: Created theme-debug.txt file
+[2026-01-26 10:04:43] About to apply theme on UI thread
+[2026-01-26 10:04:43] App.OnStartup: Creating MainWindow
+[2026-01-26 10:04:45] App.OnStartup: MainWindow created and shown
+[2026-01-26 10:04:45] On UI thread, ensuring theme is applied
+[2026-01-26 10:04:45] Manually applying theme
+[2026-01-26 10:04:45] Theme application complete
+[2026-01-26 10:04:45] Running application
