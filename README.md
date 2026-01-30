@@ -35,14 +35,32 @@
 
 ### Option 1: Build from Source
 
+The recommended way to build is with the included `build-package.ps1` script:
+
 1. Clone or download this repository
-2. Open `WIM-ISO-Driver-Injector.sln` in Visual Studio
-3. Build the solution (Release configuration recommended)
-4. Publish as self-contained:
+2. Ensure [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) is installed
+3. From the repository root, run:
    ```powershell
-   dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+   .\build-package.ps1
    ```
-5. The executable will be in `WIMISODriverInjector\bin\Release\net8.0-windows\win-x64\publish\`
+4. Outputs:
+   - **Published files**: `publish\win-x64\` — run `idiot.exe` directly
+   - **Portable ZIP**: `publish\idiot-v{version}-win-x64-portable.zip` — extract and run
+   - **Installer** (if Inno Setup 6 is installed): `publish\idiot-v{version}-win-x64-installer.exe`
+
+**Script parameters** (all optional):
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-Configuration` | Release | Build configuration |
+| `-Runtime` | win-x64 | Target runtime (e.g. win-x86, win-arm64) |
+| `-Version` | 0.1.0 | Version string for output filenames |
+| `-SkipInstaller` | — | Skip Inno Setup installer (e.g. if not installed) |
+
+Example: build with a specific version and skip the installer:
+```powershell
+.\build-package.ps1 -Version 1.0.0 -SkipInstaller
+```
 
 ### Option 2: Pre-built Executable
 
