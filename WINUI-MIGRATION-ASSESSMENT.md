@@ -165,3 +165,38 @@ No changes to dumbcd are needed; we only replicate its color approach in the new
 - **dumbcd:** Used only as reference; no changes to the dumbcd app or repo are required.
 
 If you want to proceed, the next concrete step is creating the WinUI project and AppTheme (with dumbcd’s colors and idiot’s brush names), then the main window shell and sidebar navigation.
+
+---
+
+## 7. Migration status (started)
+
+The following has been done in the **idiot** project (no changes in dumbcd):
+
+- **Project:** `WIMISODriverInjector.csproj` converted to WinUI 3 (`UseWinUI`, Windows App SDK, `net8.0-windows10.0.19041.0`). Single-file publish removed for now (can be revisited).
+- **Theme:** `Themes/AppTheme.xaml` added with dumbcd-style green accent and idiot brush names (Light/Dark ThemeDictionaries, `PrimaryButtonStyle`, `NavigationButtonStyle`, `ButtonStyle`).
+- **App:** `App.xaml` / `App.xaml.cs` updated for WinUI (`XamlControlsResources`, `AppTheme.xaml`, `DeploymentManager.Initialize()`, `OnLaunched`).
+- **Entry point:** `Program.cs` uses custom `Main`: CLI when `args.Length > 0`, otherwise `Application.Start(_ => new App())`.
+- **MainWindow:** Full WinUI XAML (sidebar + content, `ThemeResource`, `ListView` instead of `ListBox`, `Closed` instead of `Closing`) and code-behind (WinUI types, `FileOpenPicker`/`FileSavePicker`/`FolderPicker` with `InitializeWithWindow`, `DispatcherQueue`, `AppWindow` title bar and sizing).
+- **Dialogs:** `ThemedMessageBox` replaced with WinUI `ContentDialog` (`ShowAsync`); call sites that need to wait use `await ThemedMessageBox.ShowAsync(...)`.
+
+**Not changed:** `Core/ThemeManager.cs` is unused but left in place; `Styles.xaml` and `Themes/DarkTheme.xaml` / `LightTheme.xaml` are obsolete (AppTheme is used). You can delete them and ThemeManager when convenient.
+
+**Build:** Run `dotnet restore` then `dotnet build WIMISODriverInjector\WIMISODriverInjector.csproj -p:Platform=x64` (or build from Visual Studio with platform x64). Fix any remaining API or XAML issues if the build reports them.
+
+---
+
+## 8. XAML compiler error MSB3073 (exit code 1)
+
+If you see:
+
+`error MSB3073: The command "...\XamlCompiler.exe" "...\input.json" "...\output.json" exited with code 1`
+
+the WinUI XAML compiler is failing and **does not print the actual error** (known limitation). Try:
+
+1. **Build from Visual Studio 2022** (platform **x64**) instead of `dotnet build` — the IDE sometimes surfaces XAML errors that the command-line compiler does not.
+2. **Install/repair .NET Framework 4.7.2 or later** — `XamlCompiler.exe` is a .NET Framework 4.7.2 app and may fail silently if the runtime is missing or broken.
+3. **Run the compiler manually** to see stderr (if any):
+   - After a failed build, from a **Developer Command Prompt** or PowerShell:
+   - `& "$env:USERPROFILE\.nuget\packages\microsoft.windowsappsdk.winui\1.8.250906003\tools\net6.0\net472\XamlCompiler.exe" "WIMISODriverInjector\obj\x64\Debug\net8.0-windows10.0.19041.0\input.json" "WIMISODriverInjector\obj\x64\Debug\net8.0-windows10.0.19041.0\output.json"`
+   - Version (e.g. `1.8.250906003`) may differ; check under `%USERPROFILE%\.nuget\packages\microsoft.windowsappsdk.winui\`.
+4. **In-process compiler** (better errors but can hit missing deps): add `WIMISODriverInjector\Directory.Build.targets` with `<UseXamlCompilerExecutable>false</UseXamlCompilerExecutable>`. If you then get an error about `System.Security.Permissions`, the in-process path is not usable on your machine; remove the file and use the steps above.

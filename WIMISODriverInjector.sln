@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11415.280 d18.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WIMISODriverInjector", "WIMISODriverInjector.csproj", "{18F3C15B-0261-2064-7CA0-81D7850A78B7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{18F3C15B-0261-2064-7CA0-81D7850A78B7}.Debug|x64.ActiveCfg = Debug|x64
+		{18F3C15B-0261-2064-7CA0-81D7850A78B7}.Debug|x64.Build.0 = Debug|x64
+		{18F3C15B-0261-2064-7CA0-81D7850A78B7}.Release|x64.ActiveCfg = Release|x64
+		{18F3C15B-0261-2064-7CA0-81D7850A78B7}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8DA41DA5-4B54-4759-871C-940A1B428C57}
+	EndGlobalSection
+EndGlobal

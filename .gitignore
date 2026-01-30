@@ -8,6 +8,12 @@
 *.userosscache
 *.sln.docstates
 
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Mono auto generated files
+mono_crash.*
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -165,6 +171,16 @@ DocProject/Help/html
 # Click-Once directory
 publish/
 
+# Temporary log files
+*.log
+startup-log.txt
+theme-debug.txt
+logs/
+
+# Release build outputs (portable ZIP, installer)
+release/
+installer-temp.iss
+
 # Publish Web Output
 *.[Pp]ublish.xml
 *.azurePubxml
@@ -178,6 +194,18 @@ publish/
 *.snupkg
 **/*.nuget.props
 **/*.nuget.targets
+
+# NuGet Symbol Packages
+*.snupkg
+
+# NuGet package restore lockfiles
+packages.lock.json
+
+# Windows App SDK / WinUI specific
+*.pri
+!idiot.pri
+Microsoft.UI.Xaml/
+MsixContent/
 
 # Windows image file caches
 Thumbs.db
@@ -194,6 +222,11 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
+
+# Project-specific ignores
+solution/
+idiotLogo.png
+
 
 # Test files (optional - uncomment if you want to ignore test ISOs/WIMs)
 # *.iso

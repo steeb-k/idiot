@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>idiotLogo.ico</ApplicationIcon>
+    <AssemblyName>idiot</AssemblyName>
+    <RootNamespace>WIMISODriverInjector</RootNamespace>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <Version>1.0.0</Version>
+    <Authors>WIM-ISO-Driver-Injector</Authors>
+    <Description>Portable tool for injecting drivers into Windows installer ISOs and WIM files</Description>
+    
+    <!-- Self-contained deployment settings -->
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    
+    <!-- Critical for WinUI 3 self-contained -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    
+    <!-- Generate PRI resources for unpackaged self-contained deployment -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <AppxPackage>false</AppxPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <!-- Exclude WPF-only XAML from WinUI build (DynamicResource, Trigger, etc. are not valid in WinUI) -->
+  <ItemGroup>
+    <Page Remove="Styles.xaml" />
+    <Page Remove="Themes\DarkTheme.xaml" />
+    <Page Remove="Themes\LightTheme.xaml" />
+  </ItemGroup>
+  <!-- ThemeManager is WPF-only (System.Windows.*); app uses AppTheme.xaml ThemeDictionaries instead -->
+  <ItemGroup>
+    <Compile Remove="Core\ThemeManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="idiotLogo.ico">
+      <Link>idiotLogo.ico</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Tools\oscdimg.exe" Link="Tools\oscdimg.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Tools\oscdimg.exe')" />
+  </ItemGroup>
+</Project>

@@ -24,7 +24,7 @@
 1. **Open the solution**
    - Launch Visual Studio 2022
    - File → Open → Project/Solution
-   - Select `WIM-ISO-Driver-Injector.sln`
+   - Select `solution\WIM-ISO-Driver-Injector.sln` (or open the repo root and open the project)
 
 2. **Restore packages**
    - Right-click solution → Restore NuGet Packages
@@ -35,14 +35,15 @@
    - Or: Right-click solution → Build
 
 4. **Output location**
-   - Debug: `WIMISODriverInjector\bin\Debug\net8.0-windows\`
-   - Release: `WIMISODriverInjector\bin\Release\net8.0-windows\`
+   - Debug: `bin\Debug\net8.0-windows10.0.19041.0\`
+   - Release: `bin\Release\net8.0-windows10.0.19041.0\`
+   - The built executable is **idiot.exe** (not WIMISODriverInjector).
 
 ### Method 2: Command Line (dotnet CLI)
 
-1. **Navigate to solution directory**
+1. **Navigate to repository root** (the folder containing `WIMISODriverInjector.csproj`)
    ```powershell
-   cd WIM-ISO-Driver-Injector
+   cd path\to\idiot
    ```
 
 2. **Restore dependencies**
@@ -54,9 +55,29 @@
    ```powershell
    dotnet build -c Release
    ```
+   From root there is only one project, so `dotnet build` works without specifying a file. To build the solution: `dotnet build solution\WIM-ISO-Driver-Injector.sln -c Release`
 
 4. **Output location**
-   - `WIMISODriverInjector\bin\Release\net8.0-windows\`
+   - `bin\Release\net8.0-windows10.0.19041.0\`
+   - The built executable is **idiot.exe**.
+
+## Release Builds: Portable ZIP and MSI Installer
+
+To build both a portable ZIP and an MSI installer (executable name **idiot.exe** in both):
+
+1. **Prerequisites**: .NET 8 SDK; WiX Toolset SDK (restored via NuGet when building the installer).
+2. **Run the release script** from the repo root:
+   ```powershell
+   .\build-release.ps1
+   ```
+3. **Outputs** (version read from `WIMISODriverInjector.csproj`):
+   - **Portable**: `release\idiot-portable-<version>.zip` — unzip and run `idiot.exe` (framework-dependent; requires .NET 8 runtime on the machine).
+   - **MSI**: `release\idiot-<version>.msi` — installs to Program Files; run **idiot.exe** from the Start Menu or install folder.
+
+To build only the MSI after a prior publish, ensure `publish\portable` exists (e.g. run the script once), then:
+```powershell
+dotnet build installer\IdiotInstaller.wixproj -c Release -p:AppPublishPath="$((Resolve-Path publish\portable).Path)"
+```
 
 ## Creating Portable Executable
 
@@ -68,7 +89,7 @@ To create a portable, self-contained executable:
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishReadyToRun=true
 ```
 
-**Output location**: `WIMISODriverInjector\bin\Release\net8.0-windows\win-x64\publish\`
+**Output location**: `bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\`
 
 ### Bundling oscdimg for ISO creation
 
@@ -76,10 +97,10 @@ Creating output ISO files requires **oscdimg.exe**. To ship the app without requ
 
 1. Obtain **oscdimg.exe** from the Windows ADK (Assessment and Deployment Kit), e.g. from:
    - `Program Files\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe`
-2. Place **oscdimg.exe** in `WIMISODriverInjector\Tools\` (or next to the published .exe in a `Tools` subfolder).
+2. Place **oscdimg.exe** in `Tools\` (or next to the published .exe in a `Tools` subfolder).
 3. Rebuild/publish; the exe will be copied to the output when present.
 
-See `WIMISODriverInjector\Tools\README.md` for details.
+See `Tools\README.md` for details.
 
 ### Options Explained
 
@@ -129,25 +150,20 @@ dotnet build -c Release
 ## Project Structure
 
 ```
-WIM-ISO-Driver-Injector/
-├── WIM-ISO-Driver-Injector.sln          # Solution file
-├── WIMISODriverInjector/
-│   ├── WIMISODriverInjector.csproj      # Project file
-│   ├── Program.cs                        # Entry point (CLI/GUI routing)
-│   ├── App.xaml                          # Application definition
-│   ├── App.xaml.cs                       # Application code-behind
-│   ├── MainWindow.xaml                   # GUI window
-│   ├── MainWindow.xaml.cs                # GUI code-behind
-│   ├── Styles.xaml                       # UI styles
-│   ├── app.manifest                      # Application manifest
-│   ├── Core/
-│   │   ├── ImageProcessor.cs             # Core processing logic
-│   │   └── Logger.cs                     # Logging system
-│   └── CLI/
-│       └── CLI.cs                        # CLI placeholder
-├── README.md                             # Main documentation
-├── USAGE.md                              # Usage guide
-└── BUILD.md                              # This file
+idiot/   (or your repo root)
+├── solution\
+│   └── WIM-ISO-Driver-Injector.sln      # Solution file (for Visual Studio)
+├── WIMISODriverInjector.csproj          # Project file (dotnet build from root)
+├── App.xaml / App.xaml.cs                # Application definition
+├── MainWindow.xaml / MainWindow.xaml.cs  # GUI window
+├── app.manifest                          # Application manifest
+├── Core/                                 # Core processing, logging, cleanup
+├── CLI/                                  # CLI entry point
+├── Themes/                               # Theme resources
+├── Tools/                                # oscdimg, boot files for ISO
+├── README.md
+├── USAGE.md
+└── BUILD.md
 ```
 
 ## Dependencies
@@ -187,14 +203,14 @@ dotnet restore
 
 **Solution**: The package should restore automatically. If not:
 ```powershell
-dotnet add WIMISODriverInjector/WIMISODriverInjector.csproj package System.CommandLine
+dotnet add WIMISODriverInjector.csproj package System.CommandLine
 ```
 
 ### Issue: "WPF not available"
 
-**Solution**: Ensure you're targeting `net8.0-windows` (not just `net8.0`)
+**Solution**: Ensure you're targeting a Windows framework (not just `net8.0`)
 - Check `TargetFramework` in `.csproj` file
-- Should be: `<TargetFramework>net8.0-windows</TargetFramework>`
+- Should be: `<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>` (or similar WinUI target)
 
 ### Issue: "Administrator manifest error"
 
@@ -208,17 +224,17 @@ After building, verify the executable:
 
 1. **Check file exists**
    ```powershell
-   Test-Path "WIMISODriverInjector\bin\Release\net8.0-windows\WIMISODriverInjector.exe"
+   Test-Path "bin\Release\net8.0-windows10.0.19041.0\idiot.exe"
    ```
 
 2. **Test CLI help**
    ```powershell
-   .\WIMISODriverInjector.exe --help
+   .\bin\Release\net8.0-windows10.0.19041.0\idiot.exe --help
    ```
 
 3. **Test GUI launch**
    ```powershell
-   .\WIMISODriverInjector.exe
+   .\bin\Release\net8.0-windows10.0.19041.0\idiot.exe
    # Should open GUI window
    ```
 
@@ -229,11 +245,11 @@ After building, verify the executable:
 When distributing the application:
 
 1. **Single executable** (if published as single file)
-   - `WIMISODriverInjector.exe`
+   - `idiot.exe`
    - No other files needed
 
 2. **Or application folder** (if not single file)
-   - `WIMISODriverInjector.exe`
+   - `idiot.exe`
    - All DLL dependencies
    - Runtime files
 
@@ -297,7 +313,7 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true
 
 ## Version Information
 
-Update version in `WIMISODriverInjector.csproj`:
+Update version in `WIMISODriverInjector.csproj` (used by the app and by `build-release.ps1` for ZIP/MSI names):
 
 ```xml
 <Version>1.0.0</Version>
