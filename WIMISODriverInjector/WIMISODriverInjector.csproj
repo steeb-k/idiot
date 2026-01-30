@@ -35,6 +35,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <EmbeddedResource Include="..\idiotLogo.ico" Link="idiotLogo.ico" />
+    <!-- oscdimg.exe: when present in Tools folder, copy to output so ISO creation works without ADK install -->
+    <Content Include="Tools\oscdimg.exe" Link="Tools\oscdimg.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Tools\oscdimg.exe')" />
   </ItemGroup>
 
   <PropertyGroup>

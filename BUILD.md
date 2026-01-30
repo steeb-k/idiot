@@ -70,6 +70,17 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 **Output location**: `WIMISODriverInjector\bin\Release\net8.0-windows\win-x64\publish\`
 
+### Bundling oscdimg for ISO creation
+
+Creating output ISO files requires **oscdimg.exe**. To ship the app without requiring a separate Windows ADK install:
+
+1. Obtain **oscdimg.exe** from the Windows ADK (Assessment and Deployment Kit), e.g. from:
+   - `Program Files\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe`
+2. Place **oscdimg.exe** in `WIMISODriverInjector\Tools\` (or next to the published .exe in a `Tools` subfolder).
+3. Rebuild/publish; the exe will be copied to the output when present.
+
+See `WIMISODriverInjector\Tools\README.md` for details.
+
 ### Options Explained
 
 - `-c Release`: Release configuration (optimized)

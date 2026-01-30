@@ -161,6 +161,9 @@ namespace WIMISODriverInjector.Core
 
             _logger.LogInfo($"Cleaning up temporary directory: {_tempDirectory}");
 
+            // Schedule reboot cleanup so that if unmount/delete fails or app exits, next boot will purge
+            await ScheduleCleanupTaskOnReboot(_tempDirectory);
+
             // Try multiple times as files may be locked
             int retries = 5;
             while (retries > 0)
@@ -187,27 +190,30 @@ namespace WIMISODriverInjector.Core
                         }
                     }
                     
-                    // If we had unmount warnings, note that manual cleanup might be needed
+                    // If dismounts did not succeed, defer cleanup to next reboot instead of blocking
                     if (unmountWarnings.Count > 0)
                     {
-                        _logger.LogWarning($"Some mount directories could not be unmounted. Manual cleanup may be required:");
+                        _logger.LogWarning($"Some mount directories could not be unmounted. Deferring cleanup to next reboot.");
                         foreach (var mountDir in unmountWarnings)
                         {
                             _logger.LogWarning($"  - {mountDir}");
                         }
-                        _logger.LogWarning("You may need to manually unmount these directories using: dism.exe /Unmount-Wim /MountDir:\"<path>\" /Discard");
+                        await Task.Delay(2000).ConfigureAwait(false); // Brief wait for any in-flight unmounts
+                        await MarkForDeletionOnReboot(_tempDirectory);
+                        await ScheduleCleanupTaskOnReboot(_tempDirectory);
+                        _logger.LogInfo("Cleanup will complete automatically on the next reboot.");
+                        break;
                     }
 
-                    // Wait longer for DISM to fully release file handles
-                    // DISM can take several seconds to release all handles after unmount
+                    // Short wait for DISM to release file handles (avoid long blocking)
                     _logger.LogInfo("Waiting for DISM to release file handles...");
-                    await Task.Delay(5000); // Increased wait time
+                    await Task.Delay(2000).ConfigureAwait(false);
                     
                     // Force garbage collection to help release any managed handles
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
-                    await Task.Delay(2000); // Increased wait time
+                    await Task.Delay(1000).ConfigureAwait(false);
                     
                     // Try to take ownership and reset permissions on locked files
                     _logger.LogInfo("Attempting to take ownership and reset permissions on locked files...");
@@ -398,6 +404,7 @@ namespace WIMISODriverInjector.Core
                                         _logger.LogWarning($"Failed to delete directory after force delete attempts: {dir} - {uaEx.Message}");
                                         // Mark for deletion on reboot as last resort
                                         await MarkForDeletionOnReboot(dir);
+                                        await ScheduleCleanupTaskOnReboot(dir);
                                     }
                                     break;
                                 }
@@ -423,6 +430,7 @@ namespace WIMISODriverInjector.Core
                                             _logger.LogWarning($"Failed to delete directory after force delete: {dir} - {ex.Message}");
                                             // Mark for deletion on reboot as last resort
                                             await MarkForDeletionOnReboot(dir);
+                                            await ScheduleCleanupTaskOnReboot(dir);
                                         }
                                     }
                                     else
@@ -484,6 +492,7 @@ namespace WIMISODriverInjector.Core
                                     _logger.LogWarning($"Temporary directory left at: {_tempDirectory}");
                                     _logger.LogWarning("Attempting to mark for deletion on reboot...");
                                     await MarkForDeletionOnReboot(_tempDirectory);
+                                    await ScheduleCleanupTaskOnReboot(_tempDirectory);
                                     _logger.LogWarning("If files remain after reboot, you may need to:");
                                     _logger.LogWarning("  1. Take ownership: takeown.exe /F \"<path>\" /R /D Y");
                                     _logger.LogWarning("  2. Grant permissions: icacls.exe \"<path>\" /grant Administrators:F /T");
@@ -511,6 +520,7 @@ namespace WIMISODriverInjector.Core
                                         _logger.LogWarning($"Failed to delete temp directory after force delete: {_tempDirectory} - {ex.Message}");
                                         _logger.LogWarning($"Temporary directory left at: {_tempDirectory}");
                                         await MarkForDeletionOnReboot(_tempDirectory);
+                                        await ScheduleCleanupTaskOnReboot(_tempDirectory);
                                     }
                                 }
                                 else
@@ -554,6 +564,9 @@ namespace WIMISODriverInjector.Core
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // Fail fast if we cannot create an ISO (avoid long run then silent-looking failure)
+                await EnsureISOBuilderAvailableAsync();
 
                 string extractPath;
                 string? mountedPath = null;
@@ -742,8 +755,12 @@ namespace WIMISODriverInjector.Core
             }
             finally
             {
-                // Always cleanup on completion or failure
-                await CleanupTempDirectory();
+                // Run cleanup fully in background - do not block UI. User is done; unmount/delete later.
+                _ = Task.Run(async () =>
+                {
+                    try { await CleanupTempDirectory(); }
+                    catch (Exception ex) { _logger.LogWarning($"Background cleanup error: {ex.Message}"); }
+                });
             }
         }
 
@@ -874,10 +891,10 @@ namespace WIMISODriverInjector.Core
 
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // Unmount without committing (we've already exported)
-                        // Use background mode for discard operations - we don't need to wait
-                        UpdateStatus($"Unmounting image {index.Index}...");
-                        await UnmountWIM(mountPath, false, cancellationToken, throwOnError: true, background: true);
+                        // Unmount without committing (we've already exported). Must wait for completion if we're
+                        // about to mount the next image from the same WIM (DISM locks the WIM until unmount finishes).
+                        bool moreImagesFromSameWim = imgIdx < indexesToProcess.Count - 1;
+                        await UnmountWIM(mountPath, false, cancellationToken, throwOnError: true, background: !moreImagesFromSameWim);
                         isMounted = false;
                     }
                     catch (Exception ex)
@@ -978,9 +995,16 @@ namespace WIMISODriverInjector.Core
             catch (Exception ex)
             {
                 _logger.LogError($"WIM processing failed: {ex.Message}");
-                // Cleanup on failure
-                await CleanupTempDirectory();
                 throw;
+            }
+            finally
+            {
+                // Run cleanup fully in background - do not block UI
+                _ = Task.Run(async () =>
+                {
+                    try { await CleanupTempDirectory(); }
+                    catch (Exception ex) { _logger.LogWarning($"Background cleanup error: {ex.Message}"); }
+                });
             }
         }
 
@@ -1472,14 +1496,15 @@ namespace WIMISODriverInjector.Core
                 : $"/Unmount-Wim /MountDir:\"{mountPath}\" /Discard";
 
             _logger.LogInfo($"Executing: dism.exe {arguments}");
-            LogToGui($"Executing: dism.exe {arguments}");
+            // Do not log discard unmount to GUI when backgrounded - user should see "Done", not DISM progress
+            if (!background)
+                LogToGui($"Executing: dism.exe {arguments}");
 
-            // For discard operations, we can run them in the background since we're not waiting for any data
-            // This prevents the app from hanging if DISM gets stuck during unmount
+            // For discard operations, run in background so the UI is never blocked
             if (!commit && background)
             {
                 _logger.LogInfo("Starting discard unmount in background (non-blocking)");
-                UpdateStatus("Unmounting image (background cleanup)...");
+                // Do not set user-facing status here; cleanup is internal. Main content scroll handles UX.
                 
                 // Fire-and-forget: Start the unmount process but don't wait for it
                 // Use a separate cancellation token source with a timeout to prevent it from running forever
@@ -1716,6 +1741,44 @@ namespace WIMISODriverInjector.Core
             {
                 _logger.LogWarning($"Could not mark for deletion on reboot: {path} - {ex.Message}");
                 _logger.LogWarning($"You may need to manually delete this after restarting your computer: {path}");
+            }
+        }
+
+        /// <summary>
+        /// Schedules a one-time task at system startup to delete the given directory, then removes the task.
+        /// Use when dismount/cleanup fails so the user does not have to manually purge.
+        /// </summary>
+        private async Task ScheduleCleanupTaskOnReboot(string directoryPath)
+        {
+            var taskName = "WIMDriverInjector_Cleanup_" + Path.GetFileName(directoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (taskName.Length > 200)
+                taskName = "WIMDriverInjector_Cleanup_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            try
+            {
+                // Task runs at startup, deletes the folder, then deletes itself
+                var deleteCmd = $"cmd /c rd /s /q \"{directoryPath}\" & schtasks /delete /tn \"{taskName}\" /f";
+                var processInfo = new ProcessStartInfo
+                {
+                    FileName = "schtasks.exe",
+                    Arguments = $"/create /tn \"{taskName}\" /tr \"{deleteCmd}\" /sc onstart /ru SYSTEM /f",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                using var process = Process.Start(processInfo);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync();
+                    if (process.ExitCode == 0)
+                        _logger.LogInfo($"Scheduled task \"{taskName}\" to remove temporary files at next startup.");
+                    else
+                        _logger.LogWarning($"Could not create cleanup scheduled task: {await process.StandardError.ReadToEndAsync()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not schedule cleanup task: {ex.Message}");
             }
         }
 
@@ -2023,12 +2086,42 @@ namespace WIMISODriverInjector.Core
             _logger.LogSuccess("ISO extracted successfully");
         }
 
+        /// <summary>
+        /// Ensures oscdimg or PowerShell New-IsoFile is available before starting ISO processing.
+        /// Call at the start of ProcessISO to fail fast with a clear message.
+        /// </summary>
+        private async Task EnsureISOBuilderAvailableAsync()
+        {
+            if (FindOSCDIMG() != null)
+                return;
+            var checkScript = "Get-Command New-IsoFile -ErrorAction SilentlyContinue";
+            var checkProcess = Process.Start(new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{checkScript}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            });
+            if (checkProcess != null)
+            {
+                await checkProcess.WaitForExitAsync();
+                var output = await checkProcess.StandardOutput.ReadToEndAsync();
+                if (!string.IsNullOrWhiteSpace(output))
+                    return;
+            }
+            var appDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            throw new Exception(
+                "ISO creation requires oscdimg.exe. Place oscdimg.exe in the application folder or in a \"Tools\" subfolder. " +
+                "You can obtain it from the Windows ADK (Assessment and Deployment Kit). " +
+                $"Application folder: {appDir}");
+        }
+
         private async Task CreateISO(string sourcePath, string outputIsoPath, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo("Creating ISO file...");
 
-            // Use oscdimg (Windows ADK tool) or PowerShell
-            // For portability, we'll try oscdimg first, then fall back to PowerShell
+            // Use oscdimg (bundled or Windows ADK) first, then fall back to PowerShell New-IsoFile
 
             var oscdimgPath = FindOSCDIMG();
             if (oscdimgPath != null)
@@ -2081,7 +2174,11 @@ namespace WIMISODriverInjector.Core
                 
                 if (string.IsNullOrWhiteSpace(output))
                 {
-                    throw new Exception("ISO creation requires oscdimg.exe (from Windows ADK) or Windows 10 1803+ with New-IsoFile cmdlet. Neither is available.");
+                    var appDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    throw new Exception(
+                        "ISO creation requires oscdimg.exe. Place oscdimg.exe in the application folder or in a \"Tools\" subfolder. " +
+                        "You can obtain it from the Windows ADK (Assessment and Deployment Kit). " +
+                        $"Application folder: {appDir}");
                 }
             }
 
@@ -2116,16 +2213,30 @@ namespace WIMISODriverInjector.Core
 
         private string? FindOSCDIMG()
         {
-            // Common locations for oscdimg.exe
-            var possiblePaths = new[]
+            // Prefer oscdimg packaged with the application (same folder or Tools subfolder)
+            var appBase = AppContext.BaseDirectory;
+            var bundledPaths = new[]
+            {
+                Path.Combine(appBase, "oscdimg.exe"),
+                Path.Combine(appBase, "Tools", "oscdimg.exe"),
+            };
+            foreach (var path in bundledPaths)
+            {
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            // Fall back to Windows ADK install locations
+            var adkPaths = new[]
             {
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Windows Kits", "10", "Assessment and Deployment Kit", "Deployment Tools", "amd64", "Oscdimg", "oscdimg.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Windows Kits", "10", "Assessment and Deployment Kit", "Deployment Tools", "amd64", "Oscdimg", "oscdimg.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Windows Kits", "10", "Assessment and Deployment Kit", "Deployment Tools", "x86", "Oscdimg", "oscdimg.exe"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Windows Kits", "10", "Assessment and Deployment Kit", "Deployment Tools", "x86", "Oscdimg", "oscdimg.exe"),
             };
-
-            foreach (var path in possiblePaths)
+            foreach (var path in adkPaths)
             {
                 if (File.Exists(path))
                 {

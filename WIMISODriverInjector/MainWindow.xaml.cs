@@ -95,10 +95,7 @@ namespace WIMISODriverInjector
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error initializing MainWindow:\n\n{ex.Message}\n\n{ex.StackTrace}", 
-                    "Initialization Error", 
-                    MessageBoxButton.OK, 
-                    MessageBoxImage.Error);
+                ThemedMessageBox.Show(this, $"Error initializing MainWindow:\n\n{ex.Message}\n\n{ex.StackTrace}", "Initialization Error", true);
                 throw;
             }
         }
@@ -195,8 +192,7 @@ namespace WIMISODriverInjector
                                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ERROR in ShowSection(Driver): {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n");
                         }
                         catch { }
-                        MessageBox.Show($"Error showing Driver Selection section:\n\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}", 
-                            "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ThemedMessageBox.Show(this, $"Error showing Driver Selection section:\n\n{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}", "Error", true);
                     }
                     break;
                 case "Options":
@@ -341,7 +337,7 @@ namespace WIMISODriverInjector
                     _mountedIsoDrive = null;
                 }
                 
-                MessageBox.Show($"Failed to mount ISO:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ThemedMessageBox.Show(this, $"Failed to mount ISO:\n\n{ex.Message}", "Error", true);
             }
         }
 
@@ -448,7 +444,7 @@ namespace WIMISODriverInjector
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to load WIM versions:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ThemedMessageBox.Show(this, $"Failed to load WIM versions:\n\n{ex.Message}", "Error", true);
             }
         }
 
@@ -557,25 +553,25 @@ namespace WIMISODriverInjector
             // Validate inputs
             if (string.IsNullOrWhiteSpace(InputFileTextBox.Text))
             {
-                MessageBox.Show("Please select an input file.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ThemedMessageBox.Show(this, "Please select an input file.", "Validation Error");
                 return;
             }
 
             if (!File.Exists(InputFileTextBox.Text))
             {
-                MessageBox.Show("Input file does not exist.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ThemedMessageBox.Show(this, "Input file does not exist.", "Validation Error", true);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(OutputFileTextBox.Text))
             {
-                MessageBox.Show("Please specify an output file.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ThemedMessageBox.Show(this, "Please specify an output file.", "Validation Error");
                 return;
             }
 
             if (_driverDirectories.Count == 0)
             {
-                MessageBox.Show("Please add at least one driver directory.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ThemedMessageBox.Show(this, "Please add at least one driver directory.", "Validation Error");
                 return;
             }
 
@@ -583,7 +579,7 @@ namespace WIMISODriverInjector
             var selectedVersions = _versionItems.Where(v => v.IsSelected).Select(v => v.Index).ToList();
             if (_selectedInstallWimPath != null && selectedVersions.Count == 0)
             {
-                MessageBox.Show("Please select at least one Windows version to include.", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ThemedMessageBox.Show(this, "Please select at least one Windows version to include.", "Validation Error");
                 return;
             }
 
@@ -700,8 +696,7 @@ namespace WIMISODriverInjector
                             ProgressBar.IsIndeterminate = false;
                             ProgressBar.Value = 100;
                             SetProcessingState(true, isProcessing: false);
-                            MessageBox.Show($"Processing completed successfully!\n\nOutput: {outputPath}", 
-                                "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                            ThemedMessageBox.Show(this, $"Processing completed successfully!\n\nOutput: {outputPath}", "Success");
                         });
                     }
                     catch (OperationCanceledException)
@@ -736,16 +731,14 @@ namespace WIMISODriverInjector
                             ProgressBar.IsIndeterminate = false;
                             ProgressBar.Value = 0;
                             SetProcessingState(true, isProcessing: false);
-                            MessageBox.Show($"Processing failed:\n\n{ex.Message}\n\nCheck the log file for details.", 
-                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            ThemedMessageBox.Show(this, $"Processing failed:\n\n{ex.Message}\n\nCheck the log file for details.", "Error", true);
                         });
                     }
                 });
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred while starting processing:\n\n{ex.Message}", 
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ThemedMessageBox.Show(this, $"An error occurred while starting processing:\n\n{ex.Message}", "Error", true);
                 SetProcessingState(true, isProcessing: false);
             }
         }
@@ -857,7 +850,7 @@ namespace WIMISODriverInjector
             }
             else
             {
-                StartProcessingButton.Content = "Start Processing";
+                StartProcessingButton.Content = "SQUIRT!";
             }
         }
 
