@@ -5,7 +5,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles.xaml"/>
-                <!-- Theme dictionaries are added dynamically by ThemeManager -->
+                <!-- Theme is added in code by ThemeManager.Initialize() before MainWindow; no Source= here so single-file publish works -->
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -119,7 +119,7 @@ namespace WIMISODriverInjector.Core
             _logger = logger;
             _guiLogCallback = guiLogCallback;
             _statusUpdateCallback = statusUpdateCallback;
-            
+
             // Use scratch directory if provided, otherwise use system temp
             if (!string.IsNullOrEmpty(scratchDirectory))
             {
@@ -1451,11 +1451,9 @@ namespace WIMISODriverInjector.Core
 
             if (exitCode != 0)
             {
-                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : output;
-                if (string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    errorMessage = $"DISM exited with code {exitCode}";
-                }
+                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
+                if (string.IsNullOrWhiteSpace(error) && string.IsNullOrWhiteSpace(output))
+                    errorMessage += ". DISM mount usually requires running the application as Administrator.";
                 _logger.LogError($"DISM mount failed: {errorMessage.Trim()}");
                 throw new Exception($"DISM mount failed: {errorMessage.Trim()}");
             }
@@ -1524,11 +1522,7 @@ namespace WIMISODriverInjector.Core
 
                 if (exitCode != 0)
                 {
-                    var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : output;
-                    if (string.IsNullOrWhiteSpace(errorMessage))
-                    {
-                        errorMessage = $"DISM exited with code {exitCode}";
-                    }
+                    var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
                     
                     // Check for common "already unmounted" or "not supported" errors
                     var errorLower = errorMessage.ToLower();
@@ -1742,16 +1736,11 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"Executing: dism.exe {arguments}");
             LogToGui($"Executing: dism.exe {arguments}");
 
-            // Use progress-aware method for Capture-Image operations
-            var (output, error, exitCode) = await RunCaptureImageWithProgress("dism.exe", arguments, outputWimPath, mountPath, cancellationToken);
+            var (output, error, exitCode) = await RunCaptureImageWithProgress("dism.exe", arguments, outputWimPath, mountPath, cancellationToken).ConfigureAwait(false);
 
             if (exitCode != 0)
             {
-                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : output;
-                if (string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    errorMessage = $"DISM exited with code {exitCode}";
-                }
+                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
                 _logger.LogError($"DISM capture failed: {errorMessage.Trim()}");
                 throw new Exception($"DISM capture failed: {errorMessage.Trim()}");
             }
@@ -1786,11 +1775,7 @@ namespace WIMISODriverInjector.Core
 
             if (captureExitCode != 0)
             {
-                var errorMessage = !string.IsNullOrWhiteSpace(captureError) ? captureError : captureOutput;
-                if (string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    errorMessage = $"DISM exited with code {captureExitCode}";
-                }
+                var errorMessage = !string.IsNullOrWhiteSpace(captureError) ? captureError : !string.IsNullOrWhiteSpace(captureOutput) ? captureOutput : $"DISM exited with code {captureExitCode}";
                 _logger.LogError($"DISM capture failed: {errorMessage.Trim()}");
                 throw new Exception($"DISM capture failed: {errorMessage.Trim()}");
             }
@@ -1804,11 +1789,7 @@ namespace WIMISODriverInjector.Core
 
             if (exportExitCode != 0)
             {
-                var errorMessage = !string.IsNullOrWhiteSpace(exportError) ? exportError : exportOutput;
-                if (string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    errorMessage = $"DISM exited with code {exportExitCode}";
-                }
+                var errorMessage = !string.IsNullOrWhiteSpace(exportError) ? exportError : !string.IsNullOrWhiteSpace(exportOutput) ? exportOutput : $"DISM exited with code {exportExitCode}";
                 _logger.LogError($"DISM export/append failed: {errorMessage.Trim()}");
                 throw new Exception($"DISM export/append failed: {errorMessage.Trim()}");
             }
@@ -1836,9 +1817,9 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"=== Driver Injection ===");
             _logger.LogInfo($"Mount Point: {mountPath}");
             _logger.LogInfo($"Driver Directories: {driverDirectories.Length}");
-            _logger.LogInfo("Starting driver injection...");
+            _logger.LogInfo("Using DISM /Add-Driver /Recurse (one call per folder for speed)");
 
-            var allDrivers = new List<string>();
+            var validDirs = new List<string>();
             foreach (var driverDir in driverDirectories)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1849,41 +1830,38 @@ namespace WIMISODriverInjector.Core
                     continue;
                 }
 
-                var infFiles = Directory.GetFiles(driverDir, "*.inf", SearchOption.AllDirectories);
-                allDrivers.AddRange(infFiles);
+                var infCount = Directory.GetFiles(driverDir, "*.inf", SearchOption.AllDirectories).Length;
                 _logger.LogInfo($"Directory: {driverDir}");
-                _logger.LogInfo($"  Found {infFiles.Length} driver file(s)");
-                foreach (var infFile in infFiles)
-                {
-                    _logger.LogInfo($"    - {Path.GetFileName(infFile)}");
-                }
+                _logger.LogInfo($"  Found {infCount} driver file(s) (.inf)");
+                if (infCount > 0)
+                    validDirs.Add(driverDir);
             }
 
-            if (allDrivers.Count == 0)
+            if (validDirs.Count == 0)
             {
-                _logger.LogWarning("No driver files (.inf) found in specified directories");
+                _logger.LogWarning("No driver directories with .inf files found");
                 return;
             }
 
             var successCount = 0;
             var failureCount = 0;
+            int folderNum = 1;
 
-            _logger.LogInfo($"Total drivers to inject: {allDrivers.Count}");
-            int driverNum = 1;
-            foreach (var driverPath in allDrivers)
+            foreach (var driverDir in validDirs)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                UpdateStatus($"Injecting driver {driverNum} of {allDrivers.Count}: {Path.GetFileName(driverPath)}...");
+                var dirName = Path.GetFileName(driverDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? driverDir;
+                UpdateStatus($"Injecting driver folder {folderNum} of {validDirs.Count}: {dirName}...");
 
                 try
                 {
-                    _logger.LogInfo($"--- Injecting Driver {driverNum} of {allDrivers.Count} ---");
-                    _logger.LogInfo($"Driver File: {Path.GetFileName(driverPath)}");
-                    _logger.LogInfo($"Driver Path: {driverPath}");
+                    _logger.LogInfo($"--- Adding drivers from folder {folderNum} of {validDirs.Count} ---");
+                    _logger.LogInfo($"Folder: {driverDir}");
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var arguments = $"/Image:\"{mountPath}\" /Add-Driver /Driver:\"{driverPath}\"";
+                    // One DISM call per folder with /Recurse: DISM finds all .inf in folder and subfolders
+                    var arguments = $"/Image:\"{mountPath}\" /Add-Driver /Driver:\"{driverDir}\" /Recurse";
                     _logger.LogInfo($"Executing: dism.exe {arguments}");
                     LogToGui($"Executing: dism.exe {arguments}");
 
@@ -1891,25 +1869,26 @@ namespace WIMISODriverInjector.Core
 
                     if (exitCode == 0)
                     {
-                        _logger.LogSuccess($"Driver {driverNum} injected successfully: {Path.GetFileName(driverPath)}");
+                        _logger.LogSuccess($"Driver folder injected successfully: {driverDir}");
                         successCount++;
                     }
                     else
                     {
-                        _logger.LogDriverFailure(driverPath, error);
+                        var errMsg = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"Exit code {exitCode}";
+                        _logger.LogDriverFailure(driverDir, errMsg);
                         failureCount++;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDriverFailure(driverPath, ex.Message);
+                    _logger.LogDriverFailure(driverDir, ex.Message);
                     failureCount++;
                 }
-                driverNum++;
+                folderNum++;
             }
 
             _logger.LogInfo($"=== Driver Injection Summary ===");
-            _logger.LogInfo($"Total drivers: {allDrivers.Count}");
+            _logger.LogInfo($"Driver folders: {validDirs.Count}");
             _logger.LogInfo($"Successful: {successCount}");
             _logger.LogInfo($"Failed: {failureCount}");
         }
@@ -1918,17 +1897,6 @@ namespace WIMISODriverInjector.Core
         {
             _logger.LogInfo("Optimizing WIM file...");
 
-            var processInfo = new ProcessStartInfo
-            {
-                FileName = "dism.exe",
-                Arguments = $"/Export-Image /SourceImageFile:\"{inputWimPath}\" /SourceIndex:1 /DestinationImageFile:\"{outputWimPath}\" /Compress:maximum",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            // For multiple indexes, we need to export each one
             var indexes = await GetWIMIndexes(inputWimPath, cancellationToken);
             
             cancellationToken.ThrowIfCancellationRequested();
@@ -1944,11 +1912,7 @@ namespace WIMISODriverInjector.Core
 
                 if (exitCode != 0)
                 {
-                    var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : output;
-                    if (string.IsNullOrWhiteSpace(errorMessage))
-                    {
-                        errorMessage = $"DISM exited with code {exitCode}";
-                    }
+                    var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
                     throw new Exception($"DISM export failed: {errorMessage.Trim()}");
                 }
             }
@@ -1976,11 +1940,7 @@ namespace WIMISODriverInjector.Core
 
                     if (exitCode != 0)
                     {
-                        var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : output;
-                        if (string.IsNullOrWhiteSpace(errorMessage))
-                        {
-                            errorMessage = $"DISM exited with code {exitCode}";
-                        }
+                        var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
                         throw new Exception($"DISM export failed: {errorMessage.Trim()}");
                     }
                 }

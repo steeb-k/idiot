@@ -4,7 +4,6 @@
         Title="I.D.I.O.T. - Image Driver Integration &amp; Optimization Tool" Height="800" Width="1200"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
-        Icon="idiotLogo.ico"
         Closing="Window_Closing">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -288,7 +287,7 @@
                 <StackPanel Margin="0,0,0,20">
                     <CheckBox x:Name="OptimizeCheckBox" 
                               Content="Optimize and shrink WIM file after injection"
-                              IsChecked="False"
+                              IsChecked="True"
                               Margin="0,5"
                               Style="{StaticResource CheckBoxStyle}"/>
                 </StackPanel>

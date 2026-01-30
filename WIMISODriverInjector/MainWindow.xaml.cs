@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using WIMISODriverInjector.Core;
 
@@ -39,6 +41,9 @@ namespace WIMISODriverInjector
             try
             {
                 InitializeComponent();
+                
+                // Set window icon (in code so single-file publish works; XAML Icon= fails when .ico isn't on disk)
+                TrySetWindowIcon();
                 
                 // Set window titlebar to dark mode if system is in dark mode
                 try
@@ -96,6 +101,31 @@ namespace WIMISODriverInjector
                     MessageBoxImage.Error);
                 throw;
             }
+        }
+
+        private void TrySetWindowIcon()
+        {
+            try
+            {
+                // Try file on disk first (works for dotnet run / non-single-file)
+                var filePath = Path.Combine(AppContext.BaseDirectory, "idiotLogo.ico");
+                if (File.Exists(filePath))
+                {
+                    Icon = BitmapFrame.Create(new Uri(filePath, UriKind.Absolute));
+                    return;
+                }
+                // Fallback: load from embedded resource (works for single-file publish)
+                var asm = Assembly.GetExecutingAssembly();
+                var resourceName = asm.GetManifestResourceNames()
+                    .FirstOrDefault(n => n.EndsWith("idiotLogo.ico", StringComparison.OrdinalIgnoreCase));
+                if (resourceName != null)
+                {
+                    using var stream = asm.GetManifestResourceStream(resourceName);
+                    if (stream != null)
+                        Icon = BitmapFrame.Create(stream);
+                }
+            }
+            catch { /* non-fatal */ }
         }
 
         private void NavigationButton_Click(object sender, RoutedEventArgs e)

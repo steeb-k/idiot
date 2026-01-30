@@ -12,5 +12,7 @@
     <SolidColorBrush x:Key="GroupBoxHeaderBrush" Color="#333333"/>
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#F0F0F0"/>
     <SolidColorBrush x:Key="ButtonPressedBrush" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="NavigationActiveBrush" Color="#F5F5F8"/>
+    <SolidColorBrush x:Key="NavigationHoverBrush" Color="#E8E8E8"/>
     
 </ResourceDictionary>

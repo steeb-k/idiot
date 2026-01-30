@@ -1,18 +1,18 @@
-[2026-01-27 09:31:10] Program.cs: Creating theme-debug.txt file
-[2026-01-27 09:31:10] Program.cs: About to apply theme
-[2026-01-27 09:31:10] App.OnStartup: About to create ThemeManager
-[2026-01-27 09:31:10] ThemeManager created. Dark mode: True
-[2026-01-27 09:31:10] App.OnStartup: ThemeManager created, calling Initialize
-[2026-01-27 09:31:10] ApplyTheme() called. isDark: True
-[2026-01-27 09:31:10] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
-[2026-01-27 09:31:10] App.TryFindResource successful: #FF1E1E1E
-[2026-01-27 09:31:10] App.OnStartup: ThemeManager initialized, setting up watcher
-[2026-01-27 09:31:10] App.OnStartup: ThemeManager setup complete
-[2026-01-27 09:31:11] Program.cs: On UI thread, checking theme
-[2026-01-27 09:31:11] Program.cs: Manually applying theme
-[2026-01-27 09:31:11] ThemeManager created. Dark mode: True
-[2026-01-27 09:31:11] ApplyTheme() called. isDark: True
-[2026-01-27 09:31:11] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
-[2026-01-27 09:31:11] App.TryFindResource successful: #FF1E1E1E
-[2026-01-27 09:31:11] Program.cs: Theme applied successfully
-[2026-01-27 09:31:11] Program.cs: Theme application complete
+[2026-01-29 11:59:16] Program.cs: Creating theme-debug.txt file
+[2026-01-29 11:59:16] Program.cs: About to apply theme
+[2026-01-29 11:59:16] App.OnStartup: About to create ThemeManager
+[2026-01-29 11:59:16] ThemeManager created. Dark mode: True
+[2026-01-29 11:59:16] App.OnStartup: ThemeManager created, calling Initialize
+[2026-01-29 11:59:16] ApplyTheme() called. isDark: True
+[2026-01-29 11:59:16] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
+[2026-01-29 11:59:16] App.TryFindResource successful: #FF1E1E1E
+[2026-01-29 11:59:16] App.OnStartup: ThemeManager initialized, setting up watcher
+[2026-01-29 11:59:16] App.OnStartup: ThemeManager setup complete
+[2026-01-29 11:59:16] Program.cs: On UI thread, checking theme
+[2026-01-29 11:59:16] Program.cs: Manually applying theme
+[2026-01-29 11:59:16] ThemeManager created. Dark mode: True
+[2026-01-29 11:59:16] ApplyTheme() called. isDark: True
+[2026-01-29 11:59:16] Theme applied: Dark. BackgroundBrush: #FF1E1E1E
+[2026-01-29 11:59:16] App.TryFindResource successful: #FF1E1E1E
+[2026-01-29 11:59:16] Program.cs: Theme applied successfully
+[2026-01-29 11:59:16] Program.cs: Theme application complete
