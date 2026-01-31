@@ -6,7 +6,7 @@
 </p>
 
 ## What does it do?
-I.D.I.O.T. can take a Windows installation ISO (or Windows PE ISO, or any WIM file) and inject drivers into it. I *personally* thought this would be very simple to do reliably and reproducably, but the intracacies of DISM commands and bootable WIM files actually turned out to be a lot more complex than I expected, so I created this as a way to get this done much more easily.
+I.D.I.O.T. can take a Windows installation ISO (or Windows PE ISO, or any WIM file) and inject drivers into it. I *personally* thought this would be very simple to do reliably and reproducably, but the intricacies of DISM commands and bootable WIM files actually turned out to be a lot more complex than I expected, so I created this as a way to get this done much more easily.
 
 In function, it's easy:
 

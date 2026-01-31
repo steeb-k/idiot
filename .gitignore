@@ -225,8 +225,6 @@ $RECYCLE.BIN/
 
 # Project-specific ignores
 solution/
-idiotLogo.png
-
 
 # Test files (optional - uncomment if you want to ignore test ISOs/WIMs)
 # *.iso
