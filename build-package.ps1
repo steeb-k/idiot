@@ -2,7 +2,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
-    [string]$Version = "0.1.0",
+    [string]$Version = "0.2.0",
     [switch]$SkipInstaller
 )
 
@@ -89,7 +89,7 @@ GitHub: https://github.com/steeb-k/idiot
 
 LICENSE
 -------
-MIT License - See LICENSE file for details
+GPLv3 - See LICENSE file for details
 "@
 
 $readmeContent | Out-File -FilePath "$portableDir\README.txt" -Encoding utf8

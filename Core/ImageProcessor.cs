@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,11 +12,40 @@ namespace WIMISODriverInjector.Core
 {
     public class ImageProcessor
     {
+        // P/Invoke for preventing system sleep during long operations
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern uint SetThreadExecutionState(uint esFlags);
+
+        // Execution state flags
+        private const uint ES_CONTINUOUS = 0x80000000;
+        private const uint ES_SYSTEM_REQUIRED = 0x00000001;
+        private const uint ES_AWAYMODE_REQUIRED = 0x00000040;
+
+        /// <summary>
+        /// Prevents the system from sleeping while long operations are running.
+        /// Call AllowSleep() when the operation is complete.
+        /// </summary>
+        private static void PreventSleep()
+        {
+            SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED);
+        }
+
+        /// <summary>
+        /// Restores normal sleep behavior after long operations complete.
+        /// </summary>
+        private static void AllowSleep()
+        {
+            SetThreadExecutionState(ES_CONTINUOUS);
+        }
+
         private readonly Logger _logger;
         private readonly string _tempDirectory;
         private readonly Action<string>? _guiLogCallback;
         private readonly Action<string>? _statusUpdateCallback;
         private readonly Action<string>? _phaseUpdateCallback;
+
+        // List of mount paths that need to be unmounted at the end (when deferUnmounts is true)
+        private readonly List<string> _deferredUnmounts = new();
 
         /// <summary>
         /// Checks the status of an ongoing DISM Capture-Image operation by monitoring the output WIM file
@@ -559,7 +589,7 @@ namespace WIMISODriverInjector.Core
             }
         }
 
-        public async Task ProcessISO(string isoPath, string outputIsoPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, Dictionary<string, List<int>>? selectedVersionsByWim = null, string? mountedDriveLetter = null)
+        public async Task ProcessISO(string isoPath, string outputIsoPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, Dictionary<string, List<int>>? selectedVersionsByWim = null, string? mountedDriveLetter = null, bool deferUnmounts = true)
         {
             var isoFileInfo = new FileInfo(isoPath);
             _logger.LogInfo($"=== Processing ISO File ===");
@@ -567,6 +597,10 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"ISO Full Path: {isoPath}");
             _logger.LogInfo($"ISO Size: {isoFileInfo.Length / (1024.0 * 1024.0):F2} MB");
             _logger.LogInfo($"Output ISO: {outputIsoPath}");
+
+            // Prevent system sleep during long-running operation
+            PreventSleep();
+            _logger.LogInfo("System sleep prevention enabled for duration of operation");
 
             try
             {
@@ -682,7 +716,7 @@ namespace WIMISODriverInjector.Core
                     }
                     // If no selection provided for non-boot WIMs, all indexes will be processed (selectedVersions remains null)
                     
-                    await ProcessWIM(tempWimPath, processedWimPath, driverDirectories, optimize, cancellationToken, selectedVersions);
+                    await ProcessWIM(tempWimPath, processedWimPath, driverDirectories, optimize, cancellationToken, selectedVersions, deferUnmounts);
                     
                     // Replace original WIM with processed one
                     _logger.LogInfo($"Replacing original WIM with processed version...");
@@ -763,6 +797,10 @@ namespace WIMISODriverInjector.Core
             }
             finally
             {
+                // Restore normal sleep behavior
+                AllowSleep();
+                _logger.LogInfo("System sleep prevention disabled");
+
                 // Run cleanup fully in background - do not block UI. User is done; unmount/delete later.
                 _ = Task.Run(async () =>
                 {
@@ -805,14 +843,29 @@ namespace WIMISODriverInjector.Core
             await Task.CompletedTask;
         }
 
-        public async Task ProcessWIM(string wimPath, string outputWimPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, List<int>? selectedIndexes = null)
+        public async Task ProcessWIM(string wimPath, string outputWimPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, List<int>? selectedIndexes = null, bool deferUnmounts = true)
         {
             var wimFileInfo = new FileInfo(wimPath);
+            // Detect if this is boot.wim - it needs special handling for bootable flag
+            // Check both the exact name and temp copies (temp_boot.wim, processed_boot.wim, etc.)
+            var wimName = wimFileInfo.Name;
+            var isBootWim = wimName.Equals("boot.wim", StringComparison.OrdinalIgnoreCase) ||
+                           wimName.EndsWith("_boot.wim", StringComparison.OrdinalIgnoreCase) ||
+                           wimName.EndsWith("boot.wim", StringComparison.OrdinalIgnoreCase);
+            
             _logger.LogInfo($"=== Processing WIM File ===");
             _logger.LogInfo($"WIM Filename: {wimFileInfo.Name}");
             _logger.LogInfo($"WIM Full Path: {wimPath}");
             _logger.LogInfo($"WIM Size: {wimFileInfo.Length / (1024.0 * 1024.0):F2} MB");
             _logger.LogInfo($"Output WIM: {outputWimPath}");
+            if (isBootWim)
+            {
+                _logger.LogInfo($"Boot WIM detected - will set bootable flag on first index");
+            }
+
+            // Prevent system sleep during long-running operation
+            PreventSleep();
+            _logger.LogInfo("System sleep prevention enabled for duration of operation");
 
             try
             {
@@ -860,16 +913,18 @@ namespace WIMISODriverInjector.Core
 
                     // Mount the WIM image (read-only from original)
                     UpdateStatus($"Mounting image {index.Index}...");
-                    var mountPath = Path.Combine(_tempDirectory, $"mount_{index.Index}");
+                    var requestedMountPath = Path.Combine(_tempDirectory, $"mount_{index.Index}");
                     _logger.LogInfo($"=== Mounting Image Index {index.Index} ===");
-                    _logger.LogInfo($"Mount Directory: {mountPath}");
+                    _logger.LogInfo($"Mount Directory: {requestedMountPath}");
                     _logger.LogInfo($"Image Name: {index.Name}");
 
                     bool isMounted = false;
+                    string mountPath = requestedMountPath; // Will be updated if retries occur
                     try
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        await MountWIM(wimPath, index.Index, mountPath, cancellationToken);
+                        // MountWIM returns the actual mount path used (may differ if retries occurred)
+                        mountPath = await MountWIM(wimPath, index.Index, requestedMountPath, cancellationToken);
                         isMounted = true;
                         _logger.LogInfo($"Image successfully mounted to: {mountPath}");
 
@@ -890,7 +945,8 @@ namespace WIMISODriverInjector.Core
                         if (imgIdx == 0)
                         {
                             // First image - create new WIM file
-                            await ExportImageToNewWIM(mountPath, newWimPath, index.Name, optimize, cancellationToken);
+                            // For boot.wim, the first index (Windows PE) must be marked as bootable
+                            await ExportImageToNewWIM(mountPath, newWimPath, index.Name, optimize, isBootWim, cancellationToken);
                         }
                         else
                         {
@@ -900,10 +956,40 @@ namespace WIMISODriverInjector.Core
 
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // Unmount without committing (we've already exported). Must wait for completion if we're
-                        // about to mount the next image from the same WIM (DISM locks the WIM until unmount finishes).
+                        // Unmount handling depends on deferUnmounts setting
+                        // When deferring: we still MUST unmount between images from the same WIM (DISM locks the WIM)
+                        // but we can defer unmounts that would otherwise run in background mode
                         bool moreImagesFromSameWim = imgIdx < indexesToProcess.Count - 1;
-                        await UnmountWIM(mountPath, false, cancellationToken, throwOnError: true, background: !moreImagesFromSameWim);
+                        
+                        if (moreImagesFromSameWim)
+                        {
+                            // Must unmount synchronously - DISM requires this before mounting next index
+                            if (deferUnmounts)
+                            {
+                                // Even when deferring, we MUST wait for this unmount
+                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
+                            }
+                            else
+                            {
+                                // Inline mode: unmount with retries
+                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
+                            }
+                        }
+                        else
+                        {
+                            // Last image (or only image) - can potentially defer
+                            if (deferUnmounts)
+                            {
+                                // Queue for later unmount
+                                _deferredUnmounts.Add(mountPath);
+                                _logger.LogInfo($"Deferred unmount queued for: {mountPath}");
+                            }
+                            else
+                            {
+                                // Inline mode: unmount with retries
+                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
+                            }
+                        }
                         isMounted = false;
                     }
                     catch (Exception ex)
@@ -965,7 +1051,7 @@ namespace WIMISODriverInjector.Core
                     _logger.LogInfo("Optimizing and shrinking WIM file...");
                     _logger.LogInfo($"Source: {newWimPath}");
                     _logger.LogInfo($"Destination: {outputWimPath}");
-                    await OptimizeWIM(newWimPath, outputWimPath, cancellationToken);
+                    await OptimizeWIM(newWimPath, outputWimPath, isBootWim, cancellationToken);
                     var outputInfo = new FileInfo(outputWimPath);
                     _logger.LogInfo($"Optimization complete. Output size: {outputInfo.Length / (1024.0 * 1024.0):F2} MB");
                     
@@ -1010,6 +1096,10 @@ namespace WIMISODriverInjector.Core
             }
             finally
             {
+                // Restore normal sleep behavior
+                AllowSleep();
+                _logger.LogInfo("System sleep prevention disabled");
+
                 // Run cleanup fully in background - do not block UI
                 _ = Task.Run(async () =>
                 {
@@ -1391,7 +1481,105 @@ namespace WIMISODriverInjector.Core
             return indexes;
         }
 
-        private async Task MountWIM(string wimPath, int index, string mountPath, CancellationToken cancellationToken = default)
+        // Timeout for mount operations - if exceeded, we'll try a new mount point
+        private static readonly TimeSpan MountTimeout = TimeSpan.FromMinutes(10);
+        private const int MaxMountRetries = 3;
+
+        /// <summary>
+        /// Mounts a WIM image with automatic retry on timeout.
+        /// If a mount operation times out, it backgrounds a discard unmount and tries a fresh mount point.
+        /// Returns the actual mount path used (may differ from requested if retries occurred).
+        /// </summary>
+        private async Task<string> MountWIM(string wimPath, int index, string mountPath, CancellationToken cancellationToken = default)
+        {
+            string currentMountPath = mountPath;
+            
+            for (int attempt = 0; attempt <= MaxMountRetries; attempt++)
+            {
+                if (attempt > 0)
+                {
+                    // Use a new mount path for retries
+                    currentMountPath = $"{mountPath}_retry{attempt}";
+                    _logger.LogWarning($"Mount retry {attempt}/{MaxMountRetries} using new mount path: {currentMountPath}");
+                    LogToGui($"Mount timed out, retrying with fresh mount point ({attempt}/{MaxMountRetries})...");
+                }
+
+                try
+                {
+                    await MountWIMInternal(wimPath, index, currentMountPath, cancellationToken);
+                    return currentMountPath; // Success - return the path we actually mounted to
+                }
+                catch (MountTimeoutException ex)
+                {
+                    _logger.LogWarning($"Mount operation timed out after {MountTimeout.TotalMinutes} minutes: {ex.Message}");
+                    
+                    if (attempt >= MaxMountRetries)
+                    {
+                        _logger.LogError($"Mount failed after {MaxMountRetries} retries due to timeouts");
+                        throw new Exception($"Mount operation timed out after {MaxMountRetries} retries. The system may have issues with DISM or WIM file access.", ex);
+                    }
+                    
+                    // Background discard the stuck mount and try again
+                    _logger.LogInfo($"Backgrounding discard unmount for stuck mount: {currentMountPath}");
+                    BackgroundDiscardMount(currentMountPath);
+                    
+                    // Small delay before retry to let system settle
+                    await Task.Delay(2000, cancellationToken);
+                }
+            }
+
+            // Should not reach here, but just in case
+            throw new Exception("Mount operation failed after all retries");
+        }
+
+        /// <summary>
+        /// Exception thrown when a mount operation times out (but DISM may still be running).
+        /// </summary>
+        private class MountTimeoutException : Exception
+        {
+            public MountTimeoutException(string message) : base(message) { }
+            public MountTimeoutException(string message, Exception inner) : base(message, inner) { }
+        }
+
+        /// <summary>
+        /// Starts a background process to discard-unmount a stuck mount point.
+        /// Does not wait for completion.
+        /// </summary>
+        private void BackgroundDiscardMount(string mountPath)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"\" /b dism.exe /Unmount-Wim /MountDir:\"{mountPath}\" /Discard",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                Process.Start(startInfo);
+                _logger.LogInfo($"Started background discard unmount for: {mountPath}");
+
+                // Also schedule a cleanup task as backup (fire and forget)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await ScheduleDiscardCleanupTaskOnReboot(mountPath);
+                        _logger.LogInfo($"Scheduled cleanup task for stuck mount: {mountPath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning($"Could not schedule cleanup task: {ex.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not start background discard: {ex.Message}");
+            }
+        }
+
+        private async Task MountWIMInternal(string wimPath, int index, string mountPath, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo($"Mounting WIM index {index}...");
             _logger.LogInfo($"  WIM File: {wimPath}");
@@ -1476,7 +1664,13 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"Executing: dism.exe {arguments}");
             LogToGui($"Executing: dism.exe {arguments}");
 
-            var (output, error, exitCode) = await RunProcessAsync("dism.exe", arguments, cancellationToken);
+            // Run mount with timeout - if it takes too long, throw MountTimeoutException
+            var (output, error, exitCode, timedOut) = await RunProcessWithTimeoutAsync("dism.exe", arguments, MountTimeout, cancellationToken);
+
+            if (timedOut)
+            {
+                throw new MountTimeoutException($"DISM mount operation timed out after {MountTimeout.TotalMinutes} minutes for index {index}");
+            }
 
             // Log DISM output for debugging
             if (!string.IsNullOrWhiteSpace(output))
@@ -1496,6 +1690,169 @@ namespace WIMISODriverInjector.Core
             _logger.LogSuccess($"WIM mounted successfully");
         }
 
+        /// <summary>
+        /// Runs a process with a timeout. If the timeout is exceeded, kills the process and returns timedOut=true.
+        /// </summary>
+        private async Task<(string output, string error, int exitCode, bool timedOut)> RunProcessWithTimeoutAsync(
+            string fileName, string arguments, TimeSpan timeout, CancellationToken cancellationToken = default)
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(processInfo);
+            if (process == null)
+            {
+                throw new Exception($"Failed to start process: {fileName}");
+            }
+
+            // Create a combined cancellation source that cancels on timeout OR user cancellation
+            using var timeoutCts = new CancellationTokenSource(timeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            bool timedOut = false;
+
+            // Register cancellation to kill process
+            using var registration = linkedCts.Token.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        // Determine if this was a timeout or user cancellation
+                        if (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                        {
+                            timedOut = true;
+                            _logger.LogWarning($"Timeout reached ({timeout.TotalMinutes} minutes), terminating {fileName} process...");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Cancellation requested, terminating {fileName} process...");
+                        }
+                        process.Kill();
+                    }
+                }
+                catch { }
+            });
+
+            var outputBuilder = new System.Text.StringBuilder();
+            var errorBuilder = new System.Text.StringBuilder();
+
+            var outputTask = Task.Run(async () =>
+            {
+                try
+                {
+                    string? line;
+                    while ((line = await process.StandardOutput.ReadLineAsync().ConfigureAwait(false)) != null)
+                    {
+                        outputBuilder.AppendLine(line);
+                        if (linkedCts.Token.IsCancellationRequested) break;
+                    }
+                }
+                catch { }
+            }, CancellationToken.None); // Don't pass token here - we want to drain the buffer
+
+            var errorTask = Task.Run(async () =>
+            {
+                try
+                {
+                    string? line;
+                    while ((line = await process.StandardError.ReadLineAsync().ConfigureAwait(false)) != null)
+                    {
+                        errorBuilder.AppendLine(line);
+                        if (linkedCts.Token.IsCancellationRequested) break;
+                    }
+                }
+                catch { }
+            }, CancellationToken.None);
+
+            try
+            {
+                await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Check if this was timeout vs user cancellation
+                if (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                {
+                    timedOut = true;
+                }
+                else
+                {
+                    throw; // Re-throw user cancellation
+                }
+            }
+
+            // Give streams a moment to drain
+            try
+            {
+                await Task.WhenAll(outputTask, errorTask).WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            }
+            catch { }
+
+            // If user cancelled, propagate that
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return (outputBuilder.ToString(), errorBuilder.ToString(), timedOut ? -1 : process.ExitCode, timedOut);
+        }
+
+        /// <summary>
+        /// Unmounts a WIM with retry logic. Used when deferUnmounts is false or when we must wait for unmount.
+        /// </summary>
+        private async Task UnmountWIMWithRetry(string mountPath, bool commit, CancellationToken cancellationToken, int maxRetries = 5)
+        {
+            Exception? lastException = null;
+            
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                try
+                {
+                    _logger.LogInfo($"Unmount attempt {attempt}/{maxRetries} for: {mountPath}");
+                    await UnmountWIMInternal(mountPath, 
+                        commit ? $"/Unmount-Wim /MountDir:\"{mountPath}\" /Commit" 
+                               : $"/Unmount-Wim /MountDir:\"{mountPath}\" /Discard", 
+                        throwOnError: true, 
+                        cancellationToken);
+                    
+                    _logger.LogSuccess($"Unmount successful on attempt {attempt}");
+                    return; // Success!
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    _logger.LogWarning($"Unmount attempt {attempt} failed: {ex.Message}");
+                    
+                    if (attempt < maxRetries)
+                    {
+                        // Wait before retrying - exponential backoff
+                        var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                        _logger.LogInfo($"Waiting {delay.TotalSeconds}s before retry...");
+                        await Task.Delay(delay, cancellationToken);
+                    }
+                }
+            }
+            
+            // All retries exhausted - log warning but don't throw
+            // The mount will be cleaned up by sweep-up or ProcessDeferredUnmounts
+            _logger.LogWarning($"All {maxRetries} unmount attempts failed for: {mountPath}");
+            _logger.LogWarning($"Last error: {lastException?.Message}");
+            _logger.LogWarning($"Mount will be cleaned up during sweep-up or at end of processing");
+            
+            // Add to deferred list so it gets processed at the end
+            if (!_deferredUnmounts.Contains(mountPath))
+            {
+                _deferredUnmounts.Add(mountPath);
+            }
+        }
+
         private async Task UnmountWIM(string mountPath, bool commit, CancellationToken cancellationToken = default, bool throwOnError = true, bool background = false)
         {
             _logger.LogInfo($"Unmounting WIM from {mountPath} (commit: {commit}, background: {background})");
@@ -1511,38 +1868,30 @@ namespace WIMISODriverInjector.Core
             if (!background)
                 LogToGui($"Executing: dism.exe {arguments}");
 
-            // For discard operations, run in background so the UI is never blocked
+            // For discard operations: first start DISM in a separate process, then create scheduled task as fallback
             if (!commit && background)
             {
-                _logger.LogInfo("Starting discard unmount in background (non-blocking)");
-                // Do not set user-facing status here; cleanup is internal. Main content scroll handles UX.
-                
-                // Fire-and-forget: Start the unmount process but don't wait for it
-                // Use a separate cancellation token source with a timeout to prevent it from running forever
-                var backgroundCts = new CancellationTokenSource(TimeSpan.FromMinutes(30)); // 30 minute max timeout
-                _ = Task.Run(async () =>
+                _logger.LogInfo("Starting discard unmount in separate process (non-blocking)");
+                // 1. Start DISM /Discard in a background process (we do not wait for it)
+                var startInfo = new ProcessStartInfo
                 {
-                    try
-                    {
-                        await UnmountWIMInternal(mountPath, arguments, throwOnError, backgroundCts.Token);
-                        _logger.LogInfo($"Background unmount completed for: {mountPath}");
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _logger.LogWarning($"Background unmount was cancelled or timed out for: {mountPath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning($"Background unmount error: {ex.Message}");
-                    }
-                    finally
-                    {
-                        backgroundCts.Dispose();
-                    }
-                }, CancellationToken.None);
-                
-                // Give it a moment to start, then continue
-                await Task.Delay(100).ConfigureAwait(false);
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"\" /b dism.exe {arguments}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                try
+                {
+                    using var launcher = Process.Start(startInfo);
+                    if (launcher != null)
+                        await launcher.WaitForExitAsync().ConfigureAwait(false); // wait only for cmd to start DISM, not for DISM
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Could not start discard process: {ex.Message}");
+                }
+                // 2. Create scheduled task as fallback: takeown, icacls, delete folder, erase task on next reboot
+                await ScheduleDiscardCleanupTaskOnReboot(mountPath).ConfigureAwait(false);
                 return;
             }
 
@@ -1599,6 +1948,101 @@ namespace WIMISODriverInjector.Core
             {
                 _logger.LogWarning($"DISM unmount error (non-critical): {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Processes all deferred unmounts. Called at the end of ISO processing after the ISO has been generated.
+        /// </summary>
+        public async Task ProcessDeferredUnmountsAsync(CancellationToken cancellationToken = default)
+        {
+            if (_deferredUnmounts.Count == 0)
+            {
+                _logger.LogInfo("No deferred unmounts to process");
+                return;
+            }
+
+            _logger.LogInfo($"=== Processing {_deferredUnmounts.Count} Deferred Unmount(s) ===");
+            
+            var failedUnmounts = new List<string>();
+            
+            foreach (var mountPath in _deferredUnmounts.ToList())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                try
+                {
+                    _logger.LogInfo($"Processing deferred unmount: {mountPath}");
+                    await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Deferred unmount failed for {mountPath}: {ex.Message}");
+                    failedUnmounts.Add(mountPath);
+                }
+            }
+            
+            // Clear the deferred list
+            _deferredUnmounts.Clear();
+            
+            if (failedUnmounts.Count > 0)
+            {
+                _logger.LogWarning($"{failedUnmounts.Count} deferred unmount(s) failed - may require Sweep Up");
+                foreach (var path in failedUnmounts)
+                {
+                    _logger.LogWarning($"  - {path}");
+                }
+            }
+            else
+            {
+                _logger.LogSuccess("All deferred unmounts processed successfully");
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of currently active WIM mounts from DISM.
+        /// </summary>
+        public async Task<List<string>> GetActiveMountsAsync(CancellationToken cancellationToken = default)
+        {
+            var activeMounts = new List<string>();
+            
+            try
+            {
+                _logger.LogInfo("Querying active WIM mounts from DISM...");
+                var (output, error, exitCode) = await RunProcessAsync("dism.exe", "/Get-MountedWimInfo", cancellationToken);
+                
+                if (exitCode == 0 && !string.IsNullOrEmpty(output))
+                {
+                    // Parse DISM output for mount directories
+                    // Format: Mount Dir : C:\path\to\mount
+                    var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        if (line.Trim().StartsWith("Mount Dir", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var colonIndex = line.IndexOf(':');
+                            if (colonIndex >= 0 && colonIndex < line.Length - 1)
+                            {
+                                // Handle "Mount Dir : C:\path" - there may be a space after the colon
+                                var pathPart = line.Substring(colonIndex + 1).Trim();
+                                // Check if there's another colon (for drive letter like C:)
+                                if (!string.IsNullOrEmpty(pathPart))
+                                {
+                                    activeMounts.Add(pathPart);
+                                    _logger.LogInfo($"Found active mount: {pathPart}");
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                _logger.LogInfo($"Found {activeMounts.Count} active mount(s)");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to query active mounts: {ex.Message}");
+            }
+            
+            return activeMounts;
         }
 
         /// <summary>
@@ -1756,8 +2200,17 @@ namespace WIMISODriverInjector.Core
         }
 
         /// <summary>
-        /// Schedules a one-time task at system startup to delete the given directory, then removes the task.
-        /// Use when dismount/cleanup fails so the user does not have to manually purge.
+        /// Schedules a one-time task at system startup to take ownership, set permissions, delete the folder, then erase the task.
+        /// Used when starting a non-blocking /Discard so cleanup happens on reboot if DISM does not finish.
+        /// </summary>
+        private async Task ScheduleDiscardCleanupTaskOnReboot(string mountPath)
+        {
+            await ScheduleCleanupTaskOnReboot(mountPath).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Schedules a one-time task at system startup to take ownership, set permissions, delete the given directory, then remove the task.
+        /// Same behavior as cancel button and SweepUp: takeown, icacls, rd, schtasks delete, del batch.
         /// </summary>
         private async Task ScheduleCleanupTaskOnReboot(string directoryPath)
         {
@@ -1766,12 +2219,25 @@ namespace WIMISODriverInjector.Core
                 taskName = "WIMDriverInjector_Cleanup_" + Guid.NewGuid().ToString("N").Substring(0, 8);
             try
             {
-                // Task runs at startup, deletes the folder, then deletes itself
-                var deleteCmd = $"cmd /c rd /s /q \"{directoryPath}\" & schtasks /delete /tn \"{taskName}\" /f";
+                var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                var scriptDir = Path.Combine(programData, "WIMDriverInjector");
+                Directory.CreateDirectory(scriptDir);
+                var batchPath = Path.Combine(scriptDir, "Cleanup_" + Guid.NewGuid().ToString("N").Substring(0, 8) + ".bat");
+                var batchContent = string.Format(
+@"@echo off
+takeown /F ""{0}"" /R /D Y
+icacls ""{0}"" /grant Administrators:F /T /C /Q
+rd /s /q ""{0}""
+schtasks /delete /tn ""{1}"" /f
+del ""%~f0""
+",
+                    directoryPath.Replace("\"", "\"\""),
+                    taskName.Replace("\"", "\"\""));
+                await File.WriteAllTextAsync(batchPath, batchContent).ConfigureAwait(false);
                 var processInfo = new ProcessStartInfo
                 {
                     FileName = "schtasks.exe",
-                    Arguments = $"/create /tn \"{taskName}\" /tr \"{deleteCmd}\" /sc onstart /ru SYSTEM /f",
+                    Arguments = $"/create /tn \"{taskName}\" /tr \"{batchPath}\" /sc onstart /ru SYSTEM /rl HIGHEST /f",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -1780,7 +2246,7 @@ namespace WIMISODriverInjector.Core
                 using var process = Process.Start(processInfo);
                 if (process != null)
                 {
-                    await process.WaitForExitAsync();
+                    await process.WaitForExitAsync().ConfigureAwait(false);
                     if (process.ExitCode == 0)
                         _logger.LogInfo($"Scheduled task \"{taskName}\" to remove temporary files at next startup.");
                     else
@@ -1796,17 +2262,29 @@ namespace WIMISODriverInjector.Core
         /// <summary>
         /// Exports a mounted image to a new WIM file (creates the WIM file)
         /// </summary>
-        private async Task ExportImageToNewWIM(string mountPath, string outputWimPath, string imageName, bool optimize, CancellationToken cancellationToken = default)
+        /// <param name="mountPath">Path to the mounted WIM image</param>
+        /// <param name="outputWimPath">Path for the output WIM file</param>
+        /// <param name="imageName">Name for the image in the WIM</param>
+        /// <param name="optimize">Whether to use maximum compression</param>
+        /// <param name="bootable">Whether to mark the image as bootable (required for boot.wim first index)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        private async Task ExportImageToNewWIM(string mountPath, string outputWimPath, string imageName, bool optimize, bool bootable = false, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             _logger.LogInfo($"Exporting mounted image to new WIM file: {outputWimPath}");
             _logger.LogInfo($"Image Name: {imageName}");
+            if (bootable)
+            {
+                _logger.LogInfo($"Bootable: Yes (required for Windows PE boot)");
+            }
             
             // Use DISM /Capture-Image to create a new WIM from the mounted directory
             // Only compress if optimization is enabled
+            // Add /Bootable flag for boot.wim first index (Windows PE) - this is CRITICAL for booting
             var compressArg = optimize ? "/Compress:maximum" : "/Compress:none";
-            var arguments = $"/Capture-Image /ImageFile:\"{outputWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg}";
+            var bootableArg = bootable ? "/Bootable" : "";
+            var arguments = $"/Capture-Image /ImageFile:\"{outputWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg} {bootableArg}".Trim();
             _logger.LogInfo($"Executing: dism.exe {arguments}");
             LogToGui($"Executing: dism.exe {arguments}");
 
@@ -1967,18 +2445,42 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"Failed: {failureCount}");
         }
 
-        private async Task OptimizeWIM(string inputWimPath, string outputWimPath, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Optimizes a WIM file by re-exporting all indexes with maximum compression.
+        /// </summary>
+        /// <param name="inputWimPath">Source WIM file path</param>
+        /// <param name="outputWimPath">Destination WIM file path</param>
+        /// <param name="isBootWim">If true, preserves bootable flag on first index (required for boot.wim)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        private async Task OptimizeWIM(string inputWimPath, string outputWimPath, bool isBootWim = false, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo("Optimizing WIM file...");
+            if (isBootWim)
+            {
+                _logger.LogInfo("Boot WIM detected - will preserve bootable flag on first index");
+            }
 
-            var indexes = await GetWIMIndexes(inputWimPath, cancellationToken);
+            var inputIndexes = await GetWIMIndexes(inputWimPath, cancellationToken);
             
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (indexes.Count == 1)
+            // Delete output file if it exists - DISM Export-Image appends when destination exists
+            if (File.Exists(outputWimPath))
             {
-                // Single index - simple export
-                var arguments = $"/Export-Image /SourceImageFile:\"{inputWimPath}\" /SourceIndex:{indexes[0].Index} /DestinationImageFile:\"{outputWimPath}\" /Compress:maximum";
+                File.Delete(outputWimPath);
+            }
+
+            // Export all indexes to the same output WIM (DISM appends each one after the first)
+            for (int i = 0; i < inputIndexes.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var index = inputIndexes[i];
+                // For boot.wim, the first index must have /Bootable flag to be bootable
+                // DISM /Export-Image preserves the bootable flag from the source if it was set during capture
+                // But we add /Bootable explicitly for the first index of boot.wim to ensure it's set
+                var bootableArg = (isBootWim && i == 0) ? "/Bootable" : "";
+                var arguments = $"/Export-Image /SourceImageFile:\"{inputWimPath}\" /SourceIndex:{index.Index} /DestinationImageFile:\"{outputWimPath}\" /Compress:maximum {bootableArg}".Trim();
                 _logger.LogInfo($"Executing: dism.exe {arguments}");
                 LogToGui($"Executing: dism.exe {arguments}");
 
@@ -1990,47 +2492,15 @@ namespace WIMISODriverInjector.Core
                     throw new Exception($"DISM export failed: {errorMessage.Trim()}");
                 }
             }
-            else
+
+            // Validate that all indexes were preserved
+            var outputIndexes = await GetWIMIndexes(outputWimPath, cancellationToken);
+            if (outputIndexes.Count != inputIndexes.Count)
             {
-                // Multiple indexes - export all to new WIM
-                var tempWim = Path.Combine(_tempDirectory, "temp_optimized.wim");
-                if (File.Exists(tempWim))
-                {
-                    File.Delete(tempWim);
-                }
-
-                for (int i = 0; i < indexes.Count; i++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var index = indexes[i];
-                    var targetWim = i == 0 ? tempWim : outputWimPath;
-
-                    var arguments = $"/Export-Image /SourceImageFile:\"{inputWimPath}\" /SourceIndex:{index.Index} /DestinationImageFile:\"{targetWim}\" /Compress:maximum";
-                    _logger.LogInfo($"Executing: dism.exe {arguments}");
-                    LogToGui($"Executing: dism.exe {arguments}");
-
-                    var (output, error, exitCode) = await RunProcessAsync("dism.exe", arguments, cancellationToken);
-
-                    if (exitCode != 0)
-                    {
-                        var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
-                        throw new Exception($"DISM export failed: {errorMessage.Trim()}");
-                    }
-                }
-
-                // Move first export to final location
-                if (File.Exists(tempWim))
-                {
-                    if (File.Exists(outputWimPath))
-                    {
-                        File.Delete(outputWimPath);
-                    }
-                    File.Move(tempWim, outputWimPath);
-                }
-                return;
+                throw new Exception($"WIM optimization failed: expected {inputIndexes.Count} index(es), but output has {outputIndexes.Count}. This indicates a critical bug in the optimization process.");
             }
 
+            _logger.LogInfo($"WIM optimization validated: {outputIndexes.Count} index(es) preserved");
             _logger.LogSuccess("WIM optimization completed");
         }
 

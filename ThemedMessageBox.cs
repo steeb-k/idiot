@@ -13,6 +13,14 @@ public static class ThemedMessageBox
 {
     public static async Task ShowAsync(Window? owner, string message, string title, bool isError = false)
     {
+        await ShowAsync(owner, message, title, isError, "OK", null);
+    }
+
+    /// <summary>
+    /// Shows a message dialog with custom button labels and returns the result.
+    /// </summary>
+    public static async Task<ContentDialogResult> ShowAsync(Window? owner, string message, string title, bool isError, string primaryButtonText, string? secondaryButtonText)
+    {
         var xamlRoot = (owner?.Content as Microsoft.UI.Xaml.FrameworkElement)?.XamlRoot;
         var dialog = new ContentDialog
         {
@@ -24,7 +32,8 @@ public static class ThemedMessageBox
                 FontSize = 14,
                 Margin = new Microsoft.UI.Xaml.Thickness(0, 0, 0, 0)
             },
-            PrimaryButtonText = "OK",
+            PrimaryButtonText = primaryButtonText,
+            SecondaryButtonText = secondaryButtonText ?? string.Empty,
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = xamlRoot
         };
@@ -50,7 +59,7 @@ public static class ThemedMessageBox
         }
         catch { }
 
-        await dialog.ShowAsync();
+        return await dialog.ShowAsync();
     }
 
     /// <summary>

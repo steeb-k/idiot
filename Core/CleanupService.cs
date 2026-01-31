@@ -15,6 +15,12 @@ public static class CleanupService
 {
     /// <summary>
     /// Sweep all local drives and system temp for WIMDriverInjector folders.
+    /// Comprehensive cleanup order:
+    /// 1. Attempt to dismount all WIM directories
+    /// 2. Run dism.exe /Cleanup-Wim
+    /// 3. Attempt to take ownership and permissions on folders
+    /// 4. Attempt to delete them
+    /// 5. Schedule a task for any remaining pieces
     /// Returns (needsRestart, summaryMessage).
     /// </summary>
     public static async Task<(bool needsRestart, string message)> SweepUpAsync(Action<string>? log = null)
@@ -64,91 +70,239 @@ public static class CleanupService
         }
 
         Log($"Found {wimDriverInjectorDirs.Count} WIMDriverInjector folder(s).");
-        var needsRestart = false;
-        var sessionsScheduled = new List<string>();
-        var folderIndex = 0;
-
+        
+        // Collect all session directories and mount directories
+        var allSessionDirs = new List<string>();
+        var allMountDirs = new List<string>();
+        
         foreach (var parentDir in wimDriverInjectorDirs)
         {
-            folderIndex++;
-            Log($"Processing folder {folderIndex}/{wimDriverInjectorDirs.Count}: {parentDir}");
-            string[] sessionDirs;
             try
             {
-                sessionDirs = Directory.GetDirectories(parentDir);
-            }
-            catch
-            {
-                continue;
-            }
-
-            foreach (var sessionDir in sessionDirs)
-            {
-                var mountDirs = new List<string>();
-                try
-                {
-                    mountDirs.AddRange(Directory.GetDirectories(sessionDir, "mount_*"));
-                }
-                catch { }
-
-                if (mountDirs.Count > 0)
-                    Log($"Dismounting {mountDirs.Count} WIM mount(s) in {Path.GetFileName(sessionDir)}...");
-                var unmountFailed = false;
-                foreach (var mountDir in mountDirs)
+                var sessionDirs = Directory.GetDirectories(parentDir);
+                allSessionDirs.AddRange(sessionDirs);
+                
+                foreach (var sessionDir in sessionDirs)
                 {
                     try
                     {
-                        var (_, _, exitCode) = await RunProcessAsync("dism.exe", $"/Unmount-Wim /MountDir:\"{mountDir}\" /Discard");
-                        if (exitCode != 0)
-                            unmountFailed = true;
+                        var mountDirs = Directory.GetDirectories(sessionDir, "mount_*");
+                        allMountDirs.AddRange(mountDirs);
+                        
+                        // Also check for retry mount directories
+                        var retryMountDirs = Directory.GetDirectories(sessionDir, "mount_*_retry*");
+                        allMountDirs.AddRange(retryMountDirs);
                     }
-                    catch
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        // ============================================
+        // STEP 1: Attempt to dismount all WIM directories
+        // ============================================
+        if (allMountDirs.Count > 0)
+        {
+            Log($"Step 1: Attempting to dismount {allMountDirs.Count} WIM mount(s)...");
+            
+            foreach (var mountDir in allMountDirs)
+            {
+                try
+                {
+                    Log($"  Dismounting: {mountDir}");
+                    // Use synchronous DISM call first for immediate feedback
+                    var (output, error, exitCode) = await RunProcessAsync("dism.exe", $"/Unmount-Wim /MountDir:\"{mountDir}\" /Discard");
+                    
+                    if (exitCode == 0)
                     {
-                        unmountFailed = true;
+                        Log($"    Successfully dismounted");
+                    }
+                    else
+                    {
+                        // Try starting in background as fallback
+                        Log($"    Direct dismount failed (exit code {exitCode}), starting background dismount...");
+                        try
+                        {
+                            var startInfo = new ProcessStartInfo
+                            {
+                                FileName = "cmd.exe",
+                                Arguments = $"/c start \"\" /b dism.exe /Unmount-Wim /MountDir:\"{mountDir}\" /Discard",
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
+                            using var launcher = Process.Start(startInfo);
+                            if (launcher != null)
+                                await launcher.WaitForExitAsync();
+                        }
+                        catch { }
                     }
                 }
-
-                await Task.Delay(500);
-
-                Log($"Taking ownership and deleting: {Path.GetFileName(sessionDir)}...");
-                try
+                catch (Exception ex)
                 {
-                    await TakeOwnershipAndResetPermissions(sessionDir);
+                    Log($"    Error dismounting: {ex.Message}");
                 }
-                catch { }
+            }
+            
+            // Give DISM processes a moment to complete
+            Log("  Waiting for dismount operations to settle...");
+            await Task.Delay(2000);
+        }
+        else
+        {
+            Log("Step 1: No WIM mounts found to dismount.");
+        }
 
+        // ============================================
+        // STEP 2: Run dism.exe /Cleanup-Wim
+        // ============================================
+        Log("Step 2: Running DISM /Cleanup-Wim to clean up orphaned mounts...");
+        try
+        {
+            var (cleanupOutput, cleanupError, cleanupExitCode) = await RunProcessAsync("dism.exe", "/Cleanup-Wim");
+            if (cleanupExitCode == 0)
+            {
+                Log("  DISM Cleanup-Wim completed successfully");
+            }
+            else
+            {
+                Log($"  DISM Cleanup-Wim returned exit code {cleanupExitCode}");
+                if (!string.IsNullOrWhiteSpace(cleanupError))
+                    Log($"  Error: {cleanupError.Trim()}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"  Error running Cleanup-Wim: {ex.Message}");
+        }
+        
+        // Give the system a moment after cleanup
+        await Task.Delay(1000);
+
+        // ============================================
+        // STEP 3: Take ownership and permissions on all folders
+        // ============================================
+        Log($"Step 3: Taking ownership and resetting permissions on {allSessionDirs.Count} session folder(s)...");
+        foreach (var sessionDir in allSessionDirs)
+        {
+            if (!Directory.Exists(sessionDir))
+            {
+                Log($"  Skipping (already deleted): {Path.GetFileName(sessionDir)}");
+                continue;
+            }
+            
+            try
+            {
+                Log($"  Processing: {Path.GetFileName(sessionDir)}");
+                await TakeOwnershipAndResetPermissions(sessionDir);
+            }
+            catch (Exception ex)
+            {
+                Log($"    Error: {ex.Message}");
+            }
+        }
+        
+        // Small delay after permission changes
+        await Task.Delay(500);
+
+        // ============================================
+        // STEP 4: Attempt to delete all session folders
+        // ============================================
+        Log($"Step 4: Attempting to delete {allSessionDirs.Count} session folder(s)...");
+        var remainingDirs = new List<string>();
+        
+        foreach (var sessionDir in allSessionDirs)
+        {
+            if (!Directory.Exists(sessionDir))
+            {
+                Log($"  Already deleted: {Path.GetFileName(sessionDir)}");
+                continue;
+            }
+            
+            try
+            {
+                Log($"  Deleting: {Path.GetFileName(sessionDir)}");
+                
+                // First try standard delete
                 try
                 {
-                    await Task.Delay(300);
-                    if (Directory.Exists(sessionDir))
+                    // Remove read-only attributes from all files first
+                    foreach (var file in Directory.GetFiles(sessionDir, "*", SearchOption.AllDirectories))
                     {
                         try
                         {
-                            Directory.Delete(sessionDir, true);
+                            File.SetAttributes(file, FileAttributes.Normal);
                         }
-                        catch
-                        {
-                            await ForceDelete(sessionDir);
-                            if (Directory.Exists(sessionDir))
-                                unmountFailed = true;
-                        }
+                        catch { }
+                    }
+                    
+                    Directory.Delete(sessionDir, true);
+                    Log($"    Deleted successfully");
+                    continue;
+                }
+                catch
+                {
+                    // Try force delete with PowerShell
+                    Log($"    Standard delete failed, trying force delete...");
+                    var forceDeleted = await ForceDelete(sessionDir);
+                    if (forceDeleted)
+                    {
+                        Log($"    Force deleted successfully");
+                        continue;
                     }
                 }
-                catch { }
-
-                if (unmountFailed && Directory.Exists(sessionDir))
+                
+                // Still exists - add to remaining
+                if (Directory.Exists(sessionDir))
                 {
-                    Log($"Scheduling cleanup on restart for: {sessionDir}");
-                    await ScheduleCleanupTaskOnReboot(sessionDir);
-                    sessionsScheduled.Add(sessionDir);
-                    needsRestart = true;
+                    Log($"    Could not delete, will schedule for cleanup");
+                    remainingDirs.Add(sessionDir);
                 }
             }
+            catch (Exception ex)
+            {
+                Log($"    Error deleting: {ex.Message}");
+                if (Directory.Exists(sessionDir))
+                    remainingDirs.Add(sessionDir);
+            }
+        }
 
+        // ============================================
+        // STEP 5: Schedule cleanup tasks for remaining directories
+        // ============================================
+        var needsRestart = false;
+        if (remainingDirs.Count > 0)
+        {
+            Log($"Step 5: Scheduling cleanup tasks for {remainingDirs.Count} remaining folder(s)...");
+            foreach (var sessionDir in remainingDirs)
+            {
+                try
+                {
+                    Log($"  Scheduling: {Path.GetFileName(sessionDir)}");
+                    await ScheduleCleanupTaskOnReboot(sessionDir);
+                    needsRestart = true;
+                }
+                catch (Exception ex)
+                {
+                    Log($"    Error scheduling: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            Log("Step 5: No remaining folders to schedule for cleanup.");
+        }
+
+        // Clean up empty parent directories
+        foreach (var parentDir in wimDriverInjectorDirs)
+        {
             try
             {
                 if (Directory.Exists(parentDir) && !Directory.EnumerateFileSystemEntries(parentDir).Any())
+                {
                     Directory.Delete(parentDir);
+                    Log($"Removed empty parent directory: {parentDir}");
+                }
             }
             catch { }
         }
@@ -156,8 +310,10 @@ public static class CleanupService
         Log("Sweep complete.");
 
         if (needsRestart)
-            return (true, $"Cleanup attempted. Some WIM mounts could not be dismounted. A scheduled task will remove them on the next restart. Restart now to complete cleanup?");
-        return (false, $"Sweep complete. Cleaned WIMDriverInjector folders from {wimDriverInjectorDirs.Count} location(s).");
+            return (true, $"Cleanup attempted. {remainingDirs.Count} folder(s) could not be deleted and have been scheduled for removal on restart. Restart now to complete cleanup?");
+        
+        var totalCleaned = allSessionDirs.Count - remainingDirs.Count;
+        return (false, $"Sweep complete. Cleaned {totalCleaned} session folder(s) from {wimDriverInjectorDirs.Count} location(s).");
     }
 
     private static async Task<(string output, string error, int exitCode)> RunProcessAsync(string fileName, string arguments)

@@ -577,6 +577,7 @@ public sealed partial class MainWindow : Window
             var outputPath = OutputFileTextBox.Text;
             var driverDirs = _driverDirectories.ToArray();
             var optimize = OptimizeCheckBox.IsChecked ?? false;
+            var deferUnmounts = DeferUnmountsCheckBox.IsChecked ?? true;
 
             StatusTextBlock.Text = "Processing...";
             ProgressBar.IsIndeterminate = true;
@@ -605,14 +606,43 @@ public sealed partial class MainWindow : Window
                             mountedDrive = _mountedIsoDrive;
                             _logger?.LogInfo($"Using already-mounted ISO drive: {mountedDrive}:\\");
                         }
-                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedByWim, mountedDrive);
+                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedByWim, mountedDrive, deferUnmounts);
                     }
                     else
                     {
                         var wimFileName = Path.GetFileName(inputPath);
                         if (wimFileName.Equals("boot.wim", StringComparison.OrdinalIgnoreCase))
                         { selectedVersionsList = null; _logger?.LogInfo("boot.wim detected - will process ALL indexes"); }
-                        await _processor.ProcessWIM(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedVersionsList);
+                        await _processor.ProcessWIM(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedVersionsList, deferUnmounts);
+                    }
+
+                    // Show cleanup status and disable cancel button during unmount phase
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        StatusTextBlock.Text = "Process completed successfully! Cleaning up...";
+                        StartProcessingButton.IsEnabled = false;
+                    });
+
+                    // Process any deferred unmounts (runs even if deferUnmounts was false - handles retry failures)
+                    await _processor.ProcessDeferredUnmountsAsync(cancellationToken);
+
+                    // Check for any remaining active mounts and prompt for cleanup
+                    var activeMounts = await _processor.GetActiveMountsAsync();
+                    if (activeMounts.Count > 0)
+                    {
+                        _logger?.LogWarning($"Found {activeMounts.Count} active mount(s) after processing");
+                        DispatcherQueue.TryEnqueue(async () =>
+                        {
+                            var result = await ThemedMessageBox.ShowAsync(this,
+                                $"Processing completed, but {activeMounts.Count} WIM mount(s) are still active. Would you like to run Sweep Up to clean them?",
+                                "Cleanup Recommended", false, "Sweep Up", "Skip");
+                            if (result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary)
+                            {
+                                // Navigate to cleanup and run sweep up
+                                ShowSection("Cleanup");
+                                SweepUp_Click(null!, null!);
+                            }
+                        });
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
@@ -737,11 +767,30 @@ public sealed partial class MainWindow : Window
 
     private void SetProcessingState(bool enabled, bool isProcessing)
     {
+        // Text boxes
         InputFileTextBox.IsEnabled = enabled;
         OutputFileTextBox.IsEnabled = enabled;
-        DriverDirectoriesListBox.IsEnabled = enabled;
-        OptimizeCheckBox.IsEnabled = enabled;
         LogFileTextBox.IsEnabled = enabled;
+        
+        // Checkboxes
+        OptimizeCheckBox.IsEnabled = enabled;
+        DeferUnmountsCheckBox.IsEnabled = enabled;
+        
+        // List controls
+        DriverDirectoriesListBox.IsEnabled = enabled;
+        WimFilesListBox.IsEnabled = enabled;
+        VersionListBox.IsEnabled = enabled;
+        
+        // Browse buttons
+        BrowseInputButton.IsEnabled = enabled;
+        BrowseOutputButton.IsEnabled = enabled;
+        BrowseLogButton.IsEnabled = enabled;
+        
+        // Driver buttons
+        AddDriverButton.IsEnabled = enabled;
+        RemoveDriverButton.IsEnabled = enabled;
+        
+        // Start/Cancel button
         StartProcessingButton.IsEnabled = true;
         StartProcessingButton.Content = isProcessing ? "Cancel" : "SQUIRT!";
     }

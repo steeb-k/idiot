@@ -80,7 +80,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="InputFileTextBox" Grid.Column="0" Margin="0,0,10,0" IsReadOnly="True"/>
-                                <Button Grid.Column="1" Content="Browse..." Click="BrowseInputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
+                                <Button x:Name="BrowseInputButton" Grid.Column="1" Content="Browse..." Click="BrowseInputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
                             </Grid>
                         </StackPanel>
 
@@ -129,8 +129,8 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="Add Directory..." Click="AddDriverDirectory_Click" Style="{StaticResource ButtonStyle}" Margin="0,0,10,0"/>
-                                <Button Content="Remove Selected" Click="RemoveDriverDirectory_Click" Style="{StaticResource ButtonStyle}"/>
+                                <Button x:Name="AddDriverButton" Content="Add Directory..." Click="AddDriverDirectory_Click" Style="{StaticResource ButtonStyle}" Margin="0,0,10,0"/>
+                                <Button x:Name="RemoveDriverButton" Content="Remove Selected" Click="RemoveDriverDirectory_Click" Style="{StaticResource ButtonStyle}"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -146,11 +146,18 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="OutputFileTextBox" Grid.Column="0" Margin="0,0,10,0"/>
-                                <Button Grid.Column="1" Content="Browse..." Click="BrowseOutputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
+                                <Button x:Name="BrowseOutputButton" Grid.Column="1" Content="Browse..." Click="BrowseOutputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
                             </Grid>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,20">
                             <CheckBox x:Name="OptimizeCheckBox" Content="Optimize and shrink WIM file after injection" IsChecked="True" Margin="0,5" Foreground="{ThemeResource PrimaryTextBrush}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <CheckBox x:Name="DeferUnmountsCheckBox" Content="Perform unmount operations last" IsChecked="True" Foreground="{ThemeResource PrimaryTextBrush}"/>
+                                <TextBlock Text="&#xE897;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
+                                           Foreground="{ThemeResource SecondaryTextBrush}" 
+                                           VerticalAlignment="Center" Margin="8,0,0,0"
+                                           ToolTipService.ToolTip="This will take much more disk space, but will greatly increase the speed of the process."/>
+                            </StackPanel>
                         </StackPanel>
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="Log File" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
@@ -160,7 +167,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="LogFileTextBox" Grid.Column="0" Margin="0,0,10,0" Text="injection-log.txt"/>
-                                <Button Grid.Column="1" Content="Browse..." Click="BrowseLogFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
+                                <Button x:Name="BrowseLogButton" Grid.Column="1" Content="Browse..." Click="BrowseLogFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
                             </Grid>
                         </StackPanel>
                         <StackPanel Margin="0,30,0,0">
