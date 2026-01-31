@@ -2,8 +2,38 @@
 ### Image Driver Integration &amp; Optimization Tool 
 
 <p align="center">
-  <img src="idiotLogo.png" alt="Idiot Logo">
+  <img src="img/idiotLogo.png" alt="Idiot Logo">
 </p>
+
+## What does it do?
+I.D.I.O.T. can take a Windows installation ISO (or Windows PE ISO, or any WIM file) and inject drivers into it. I *personally* thought this would be very simple to do reliably and reproducably, but the intracacies of DISM commands and bootable WIM files actually turned out to be a lot more complex than I expected, so I created this as a way to get this done much more easily.
+
+In function, it's easy:
+
+1. Select an ISO or WIM file
+2. Select a folder(s) of drivers
+3. Select an output file name
+4. Squirt those drivers on in
+
+## What to expect
+Performance wise, it takes about as long as it would take to do manually, but less time because you spend less time screaming at Microsoft for creating WIM files in the first place and then also being pretty poor about documenting it.
+
+A standard USA Windows 11 25H2 installation ISO from Microsoft has ELEVEN versions in it. Most people need, at best, one or two (Home and Pro). So this tool gives you the option to select only which indexes you need.
+
+### Test rig
+* Insprion 3030S
+* 16GB of DDR5 4400 MT/s
+* Intel i5-14400 @ 2.5 GHz
+
+### Results
+Generating a new ISO using only 2 indexes takes about **37 minutes.** The installer indexes take about 15 minutes a pop up on this setup.
+
+## What you'll want
+Plenty of storage space. Each index in a WIM file unpacks to a whopping 32GB on top of the ~8GB we need to extract from the ISO. The default method waits until all WIMs are done being processed to unmount the WIM files to speed the actual ISO generation process up, but if you want to do all 11 indexes in your installer and do NOT have ~400GB available, you can opt to have unmount commands run during the process. Bear in mind, that will dramatically slow down the ultimate ISO generation, so if you have the space, use it.
+
+There is a Cleanup section inside the app that will find any dangling WIM files that fail to dismount and delete them. If it can't, it will write a scheduled task to run on the next startup that will. It has been pretty reliable in my testing. 
+
+Keep scrolling to see the AI-generated README file that existed before I wrote this one. It's probably a lot more informative but may also be a lot less truthful. Enjoy!
 
 ## Features
 
@@ -13,18 +43,11 @@
 - ✅ **Logging**: Comprehensive logging of all operations, including failed driver injections
 - ✅ **Optimization**: Optional WIM file optimization and shrinking
 - ✅ **Modern GUI**: User-friendly Windows Presentation Foundation (WPF) interface
-- ✅ **CLI Support**: Full command-line interface for automation and scripting
+- ✅ **CLI Support**: Full command-line interface for automation and scripting †
 - ✅ **Portable**: Self-contained executable with no external dependencies (except Windows built-in tools)
 - ✅ **Open Source**: 100% open source, no proprietary components
 
-## Requirements
-
-### Runtime Requirements
-
-- **Windows 10/11** or **Windows PE** (Windows Preinstallation Environment)
-- **DISM** (Deployment Image Servicing and Management) - Built into Windows 10/11 and Windows PE
-- **PowerShell** - For ISO extraction/creation (built into Windows 10/11)
-- **Administrator privileges** - Required for DISM operations
+† Has not been tested yet
 
 ### Build Requirements
 
