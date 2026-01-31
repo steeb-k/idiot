@@ -38,22 +38,34 @@
                                    MaxWidth="210"/>
                     </StackPanel>
                     <StackPanel>
-                        <Button x:Name="ImageSelectionButton" Content="1. Image Selection" Click="NavigationButton_Click" Tag="Image"
+                        <Border x:Name="ImageSelectionIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                            <Button x:Name="ImageSelectionButton" Content="Image Selection" Click="NavigationButton_Click" Tag="ImageSelection"
                                 Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
-                        <Button x:Name="DriverSelectionButton" Content="2. Driver Selection" Click="NavigationButton_Click" Tag="Driver"
+                        </Border>
+                        <Border x:Name="DriverSelectionIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                            <Button x:Name="DriverSelectionButton" Content="Options" Click="NavigationButton_Click" Tag="Options"
                                 Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
-                        <Button x:Name="OptionsButton" Content="3. Options" Click="NavigationButton_Click" Tag="Options"
+                        </Border>
+                        <Border x:Name="OptionsIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                            <Button x:Name="OptionsButton" Content="Finalize" Click="NavigationButton_Click" Tag="Finalize"
                                 Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
+                        </Border>
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,0,0,20">
-                    <Button x:Name="CleanupButton" Content="Cleanup" Click="NavigationButton_Click" Tag="Cleanup"
-                            Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
-                    <Button x:Name="LogsButton" Content="Logs" Click="NavigationButton_Click" Tag="Logs"
-                            Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
-                    <Button x:Name="AboutButton" Content="About" Click="NavigationButton_Click" Tag="About"
-                            Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
+                    <Border x:Name="CleanupIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                        <Button x:Name="CleanupButton" Content="Cleanup" Click="NavigationButton_Click" Tag="Cleanup"
+                                Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
+                    </Border>
+                    <Border x:Name="LogsIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                        <Button x:Name="LogsButton" Content="Logs" Click="NavigationButton_Click" Tag="Logs"
+                                Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
+                    </Border>
+                    <Border x:Name="AboutIndicator" Background="Transparent" BorderBrush="Transparent" BorderThickness="3,0,0,0">
+                        <Button x:Name="AboutButton" Content="About" Click="NavigationButton_Click" Tag="About"
+                                Style="{StaticResource NavigationButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="20,12"/>
+                    </Border>
                 </StackPanel>
             </Grid>
         </Border>
@@ -67,10 +79,7 @@
                         <TextBlock Text="Image Selection" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
                         <TextBlock Text="Select an ISO or WIM file to process" FontSize="14" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,30"/>
 
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Scratch Drive" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
-                            <ComboBox x:Name="ScratchDriveComboBox" Height="40"/>
-                        </StackPanel>
+                        <!-- Scratch Drive selection moved to OptionsPanel -->
 
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="Input File" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
@@ -116,28 +125,9 @@
                     </StackPanel>
 
                     <!-- Driver Selection Section -->
-                    <StackPanel x:Name="DriverSelectionPanel" Visibility="Collapsed">
-                        <TextBlock Text="Driver Selection" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
-                        <TextBlock Text="Select directories containing driver files (.inf) to inject" FontSize="14" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,30"/>
-                        <StackPanel Margin="0,0,0,20">
-                            <TextBlock Text="Driver Directories" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
-                            <ListView x:Name="DriverDirectoriesListBox" Height="300" Margin="0,0,0,10" SelectionMode="Single">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" Margin="5"/>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                            <StackPanel Orientation="Horizontal">
-                                <Button x:Name="AddDriverButton" Content="Add Directory..." Click="AddDriverDirectory_Click" Style="{StaticResource ButtonStyle}" Margin="0,0,10,0"/>
-                                <Button x:Name="RemoveDriverButton" Content="Remove Selected" Click="RemoveDriverDirectory_Click" Style="{StaticResource ButtonStyle}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Options Section -->
                     <StackPanel x:Name="OptionsPanel" Visibility="Collapsed">
                         <TextBlock Text="Options" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+                        <!-- Output File selector -->
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="Output File" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
                             <Grid>
@@ -149,6 +139,12 @@
                                 <Button x:Name="BrowseOutputButton" Grid.Column="1" Content="Browse..." Click="BrowseOutputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
                             </Grid>
                         </StackPanel>
+                        <!-- Scratch Drive selection -->
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Scratch Drive" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <ComboBox x:Name="ScratchDriveComboBox" Height="40"/>
+                        </StackPanel>
+                        <!-- Checkboxes moved here below Scratch Drive -->
                         <StackPanel Margin="0,0,0,20">
                             <CheckBox x:Name="OptimizeCheckBox" Content="Optimize and shrink WIM file after injection" IsChecked="True" Margin="0,5" Foreground="{ThemeResource PrimaryTextBrush}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,5">
@@ -159,6 +155,27 @@
                                            ToolTipService.ToolTip="This will take much more disk space, but will greatly increase the speed of the process."/>
                             </StackPanel>
                         </StackPanel>
+                        <!-- Driver Directories section -->
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Driver Directories" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Select directories containing driver files (.inf) to inject" FontSize="14" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <Button x:Name="AddDriverButton" Content="Add Directory..." Click="AddDriverDirectory_Click" Style="{StaticResource ButtonStyle}" Margin="0,0,10,0"/>
+                                <Button x:Name="RemoveDriverButton" Content="Remove Selected" Click="RemoveDriverDirectory_Click" Style="{StaticResource ButtonStyle}"/>
+                            </StackPanel>
+                            <ListView x:Name="DriverDirectoriesListBox" SelectionMode="Single">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Margin="5"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Options Section -->
+                    <StackPanel x:Name="FinalizePanel" Visibility="Collapsed">
+                        <TextBlock Text="Finalize" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="Log File" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
                             <Grid>

@@ -44,6 +44,16 @@ namespace WIMISODriverInjector.Core
         private readonly Action<string>? _statusUpdateCallback;
         private readonly Action<string>? _phaseUpdateCallback;
 
+        /// <summary>
+        /// Gets the temp directory path used by this processor instance.
+        /// </summary>
+        public string TempDirectory => _tempDirectory;
+
+        /// <summary>
+        /// Checks if the temp directory still exists (cleanup may have failed).
+        /// </summary>
+        public bool TempDirectoryExists => !string.IsNullOrEmpty(_tempDirectory) && Directory.Exists(_tempDirectory);
+
         // List of mount paths that need to be unmounted at the end (when deferUnmounts is true)
         private readonly List<string> _deferredUnmounts = new();
 
@@ -800,13 +810,8 @@ namespace WIMISODriverInjector.Core
                 // Restore normal sleep behavior
                 AllowSleep();
                 _logger.LogInfo("System sleep prevention disabled");
-
-                // Run cleanup fully in background - do not block UI. User is done; unmount/delete later.
-                _ = Task.Run(async () =>
-                {
-                    try { await CleanupTempDirectory(); }
-                    catch (Exception ex) { _logger.LogWarning($"Background cleanup error: {ex.Message}"); }
-                });
+                // Note: Cleanup is NOT done here - caller (MainWindow) handles cleanup after all processing
+                // This prevents race conditions where cleanup runs while temp dir is still needed
             }
         }
 
@@ -853,6 +858,14 @@ namespace WIMISODriverInjector.Core
                            wimName.EndsWith("_boot.wim", StringComparison.OrdinalIgnoreCase) ||
                            wimName.EndsWith("boot.wim", StringComparison.OrdinalIgnoreCase);
             
+            // For boot.wim, read the original boot index from the WIM header
+            // Windows 11 Setup ISOs have boot index = 2 (Microsoft Windows Setup), NOT index 1 (Windows PE)
+            int originalBootIndex = 0;
+            if (isBootWim)
+            {
+                originalBootIndex = GetWIMBootIndex(wimPath);
+            }
+            
             _logger.LogInfo($"=== Processing WIM File ===");
             _logger.LogInfo($"WIM Filename: {wimFileInfo.Name}");
             _logger.LogInfo($"WIM Full Path: {wimPath}");
@@ -860,7 +873,7 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"Output WIM: {outputWimPath}");
             if (isBootWim)
             {
-                _logger.LogInfo($"Boot WIM detected - will set bootable flag on first index");
+                _logger.LogInfo($"Boot WIM detected - original boot index: {originalBootIndex}");
             }
 
             // Prevent system sleep during long-running operation
@@ -942,16 +955,20 @@ namespace WIMISODriverInjector.Core
                         _logger.LogInfo($"=== Exporting Image {index.Index} to New WIM ===");
                         _logger.LogInfo($"Image Name: {index.Name}");
                         
+                        // For boot.wim, mark the image as bootable if its original index matches the original boot index
+                        // Windows 11 Setup ISOs have boot index = 2 (Microsoft Windows Setup), NOT index 1 (Windows PE)
+                        bool shouldBeBootable = isBootWim && index.Index == originalBootIndex;
+                        
                         if (imgIdx == 0)
                         {
                             // First image - create new WIM file
-                            // For boot.wim, the first index (Windows PE) must be marked as bootable
-                            await ExportImageToNewWIM(mountPath, newWimPath, index.Name, optimize, isBootWim, cancellationToken);
+                            await ExportImageToNewWIM(mountPath, newWimPath, index.Name, optimize, shouldBeBootable, cancellationToken);
                         }
                         else
                         {
                             // Subsequent images - append to existing WIM
-                            await AppendImageToWIM(mountPath, newWimPath, index.Name, optimize, cancellationToken);
+                            // Note: AppendImageToWIM needs to support bootable flag for correct boot.wim handling
+                            await AppendImageToWIM(mountPath, newWimPath, index.Name, optimize, cancellationToken, shouldBeBootable);
                         }
 
                         cancellationToken.ThrowIfCancellationRequested();
@@ -1099,13 +1116,8 @@ namespace WIMISODriverInjector.Core
                 // Restore normal sleep behavior
                 AllowSleep();
                 _logger.LogInfo("System sleep prevention disabled");
-
-                // Run cleanup fully in background - do not block UI
-                _ = Task.Run(async () =>
-                {
-                    try { await CleanupTempDirectory(); }
-                    catch (Exception ex) { _logger.LogWarning($"Background cleanup error: {ex.Message}"); }
-                });
+                // Note: Cleanup is NOT done here - caller handles cleanup after all processing
+                // This prevents race conditions and allows proper sequencing
             }
         }
 
@@ -1479,6 +1491,45 @@ namespace WIMISODriverInjector.Core
             }
 
             return indexes;
+        }
+
+        /// <summary>
+        /// Reads the boot index from a WIM file header.
+        /// The boot index is stored at offset 0x78 (120 bytes) in the WIM header.
+        /// Windows Setup boot.wim typically has boot index = 2 (Microsoft Windows Setup),
+        /// not index 1 (Microsoft Windows PE).
+        /// </summary>
+        /// <param name="wimPath">Path to the WIM file</param>
+        /// <returns>The boot index (1-based), or 0 if no boot index is set</returns>
+        public int GetWIMBootIndex(string wimPath)
+        {
+            try
+            {
+                // WIM header boot index is at offset 0x78 (120 bytes)
+                // This is a DWORD (4 bytes) containing the 1-based index of the bootable image
+                // A value of 0 means no image is marked as bootable
+                const int BOOT_INDEX_OFFSET = 0x78;
+                
+                using var fs = new FileStream(wimPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                if (fs.Length < BOOT_INDEX_OFFSET + 4)
+                {
+                    _logger.LogWarning($"WIM file too small to read boot index: {wimPath}");
+                    return 0;
+                }
+                
+                var buffer = new byte[4];
+                fs.Seek(BOOT_INDEX_OFFSET, SeekOrigin.Begin);
+                fs.Read(buffer, 0, 4);
+                
+                int bootIndex = BitConverter.ToInt32(buffer, 0);
+                _logger.LogInfo($"WIM boot index from header: {bootIndex}");
+                return bootIndex;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to read WIM boot index: {ex.Message}");
+                return 0;
+            }
         }
 
         // Timeout for mount operations - if exceeded, we'll try a new mount point
@@ -2303,12 +2354,22 @@ del ""%~f0""
         /// <summary>
         /// Appends a mounted image to an existing WIM file
         /// </summary>
-        private async Task AppendImageToWIM(string mountPath, string wimPath, string imageName, bool optimize, CancellationToken cancellationToken = default)
+        /// <param name="mountPath">Path to the mounted WIM image</param>
+        /// <param name="wimPath">Path to the destination WIM file</param>
+        /// <param name="imageName">Name for the image in the WIM</param>
+        /// <param name="optimize">Whether to use maximum compression</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <param name="bootable">Whether to mark this image as bootable (for boot.wim)</param>
+        private async Task AppendImageToWIM(string mountPath, string wimPath, string imageName, bool optimize, CancellationToken cancellationToken = default, bool bootable = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             _logger.LogInfo($"Appending mounted image to existing WIM file: {wimPath}");
             _logger.LogInfo($"Image Name: {imageName}");
+            if (bootable)
+            {
+                _logger.LogInfo($"Bootable: Yes (this image should be the boot image)");
+            }
             
             // Capture to a temporary WIM file first, then export/append to the main WIM
             var tempWimPath = Path.Combine(_tempDirectory, $"temp_append_{Path.GetFileName(wimPath)}");
@@ -2318,8 +2379,10 @@ del ""%~f0""
             }
             
             // First, capture the mounted directory to a temp WIM
+            // If this image should be bootable, add the /Bootable flag to capture
             var compressArg = optimize ? "/Compress:maximum" : "/Compress:none";
-            var captureArgs = $"/Capture-Image /ImageFile:\"{tempWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg}";
+            var bootableArg = bootable ? "/Bootable" : "";
+            var captureArgs = $"/Capture-Image /ImageFile:\"{tempWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg} {bootableArg}".Trim();
             _logger.LogInfo($"Executing: dism.exe {captureArgs}");
             LogToGui($"Executing: dism.exe {captureArgs}");
 
@@ -2333,7 +2396,9 @@ del ""%~f0""
             }
 
             // Now export from the temp WIM to append to the main WIM
-            var arguments = $"/Export-Image /SourceImageFile:\"{tempWimPath}\" /SourceIndex:1 /DestinationImageFile:\"{wimPath}\"";
+            // If bootable, add /Bootable flag to export to set the boot index
+            var exportBootableArg = bootable ? "/Bootable" : "";
+            var arguments = $"/Export-Image /SourceImageFile:\"{tempWimPath}\" /SourceIndex:1 /DestinationImageFile:\"{wimPath}\" {exportBootableArg}".Trim();
             _logger.LogInfo($"Executing: dism.exe {arguments}");
             LogToGui($"Executing: dism.exe {arguments}");
 
@@ -2450,14 +2515,18 @@ del ""%~f0""
         /// </summary>
         /// <param name="inputWimPath">Source WIM file path</param>
         /// <param name="outputWimPath">Destination WIM file path</param>
-        /// <param name="isBootWim">If true, preserves bootable flag on first index (required for boot.wim)</param>
+        /// <param name="isBootWim">If true, preserves bootable flag based on original boot index (required for boot.wim)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         private async Task OptimizeWIM(string inputWimPath, string outputWimPath, bool isBootWim = false, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo("Optimizing WIM file...");
+            
+            // For boot.wim, read the boot index from the source WIM header to preserve it
+            int bootIndex = 0;
             if (isBootWim)
             {
-                _logger.LogInfo("Boot WIM detected - will preserve bootable flag on first index");
+                bootIndex = GetWIMBootIndex(inputWimPath);
+                _logger.LogInfo($"Boot WIM detected - will preserve bootable flag on index {bootIndex}");
             }
 
             var inputIndexes = await GetWIMIndexes(inputWimPath, cancellationToken);
@@ -2476,10 +2545,11 @@ del ""%~f0""
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var index = inputIndexes[i];
-                // For boot.wim, the first index must have /Bootable flag to be bootable
-                // DISM /Export-Image preserves the bootable flag from the source if it was set during capture
-                // But we add /Bootable explicitly for the first index of boot.wim to ensure it's set
-                var bootableArg = (isBootWim && i == 0) ? "/Bootable" : "";
+                // For boot.wim, apply /Bootable flag to the index that matches the original boot index
+                // The boot index in the new WIM corresponds to the order of export (1-based)
+                // So we apply /Bootable when exporting the image that should be bootable
+                var shouldBeBootable = isBootWim && (i + 1) == bootIndex;
+                var bootableArg = shouldBeBootable ? "/Bootable" : "";
                 var arguments = $"/Export-Image /SourceImageFile:\"{inputWimPath}\" /SourceIndex:{index.Index} /DestinationImageFile:\"{outputWimPath}\" /Compress:maximum {bootableArg}".Trim();
                 _logger.LogInfo($"Executing: dism.exe {arguments}");
                 LogToGui($"Executing: dism.exe {arguments}");

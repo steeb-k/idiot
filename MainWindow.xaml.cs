@@ -16,6 +16,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.Win32;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.UI;
 using WinRT;
 using WinRT.Interop;
 using WIMISODriverInjector.Core;
@@ -65,8 +66,8 @@ public sealed partial class MainWindow : Window
             Directory.CreateDirectory(logsDir);
             LogFileTextBox.Text = Path.Combine(logsDir, $"injection-log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
 
-            ImageSelectionButton.Tag = "Image";
-            ShowSection("Image");
+            ImageSelectionButton.Tag = "ImageSelection";
+            ShowSection("ImageSelection");
             RefreshLogFiles();
 
             Closed += Window_Closed;
@@ -163,9 +164,9 @@ public sealed partial class MainWindow : Window
             var section = button.Tag?.ToString() ?? "";
             if (section == "Active")
             {
-                if (button == ImageSelectionButton) section = "Image";
-                else if (button == DriverSelectionButton) section = "Driver";
-                else if (button == OptionsButton) section = "Options";
+                if (button == ImageSelectionButton) section = "ImageSelection";
+                else if (button == DriverSelectionButton) section = "Options";
+                else if (button == OptionsButton) section = "Finalize";
                 else if (button == CleanupButton) section = "Cleanup";
                 else if (button == LogsButton) section = "Logs";
                 else if (button == AboutButton) section = "About";
@@ -177,50 +178,81 @@ public sealed partial class MainWindow : Window
 
     private void ShowSection(string section)
     {
-        ImageSelectionButton.Tag = "Image";
-        DriverSelectionButton.Tag = "Driver";
-        OptionsButton.Tag = "Options";
+        // Reset all buttons to default appearance
+        var transparentBrush = new SolidColorBrush();
+        transparentBrush.Color = Color.FromArgb(0, 0, 0, 0);
+        
+        ImageSelectionButton.Tag = "ImageSelection";
+        ImageSelectionButton.Background = transparentBrush;
+        ImageSelectionIndicator.BorderBrush = transparentBrush;
+        DriverSelectionButton.Tag = "Options";
+        DriverSelectionButton.Background = transparentBrush;
+        DriverSelectionIndicator.BorderBrush = transparentBrush;
+        OptionsButton.Tag = "Finalize";
+        OptionsButton.Background = transparentBrush;
+        OptionsIndicator.BorderBrush = transparentBrush;
         CleanupButton.Tag = "Cleanup";
+        CleanupButton.Background = transparentBrush;
+        CleanupIndicator.BorderBrush = transparentBrush;
         LogsButton.Tag = "Logs";
+        LogsButton.Background = transparentBrush;
+        LogsIndicator.BorderBrush = transparentBrush;
         AboutButton.Tag = "About";
+        AboutButton.Background = transparentBrush;
+        AboutIndicator.BorderBrush = transparentBrush;
 
         ImageSelectionPanel.Visibility = Visibility.Collapsed;
-        DriverSelectionPanel.Visibility = Visibility.Collapsed;
         OptionsPanel.Visibility = Visibility.Collapsed;
+        FinalizePanel.Visibility = Visibility.Collapsed;
         CleanupPanel.Visibility = Visibility.Collapsed;
         LogsPanel.Visibility = Visibility.Collapsed;
         AboutPanel.Visibility = Visibility.Collapsed;
         MainScrollViewer.Visibility = Visibility.Visible;
 
+        var navigationActiveBrush = Application.Current.Resources["NavigationActiveBrush"] as SolidColorBrush;
+        var primaryBrush = Application.Current.Resources["PrimaryBrush"] as SolidColorBrush;
+
         switch (section)
         {
-            case "Image":
+            case "ImageSelection":
                 ImageSelectionPanel.Visibility = Visibility.Visible;
                 ImageSelectionButton.Tag = "Active";
-                break;
-            case "Driver":
-                if (DriverDirectoriesListBox.ItemsSource == null)
-                    DriverDirectoriesListBox.ItemsSource = _driverDirectories;
-                DriverSelectionPanel.Visibility = Visibility.Visible;
-                DriverSelectionButton.Tag = "Active";
+                if (navigationActiveBrush != null) ImageSelectionButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) ImageSelectionIndicator.BorderBrush = primaryBrush;
                 break;
             case "Options":
+                if (DriverDirectoriesListBox.ItemsSource == null)
+                    DriverDirectoriesListBox.ItemsSource = _driverDirectories;
                 OptionsPanel.Visibility = Visibility.Visible;
+                DriverSelectionButton.Tag = "Active";
+                if (navigationActiveBrush != null) DriverSelectionButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) DriverSelectionIndicator.BorderBrush = primaryBrush;
+                break;
+            case "Finalize":
+                FinalizePanel.Visibility = Visibility.Visible;
                 OptionsButton.Tag = "Active";
+                if (navigationActiveBrush != null) OptionsButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) OptionsIndicator.BorderBrush = primaryBrush;
                 break;
             case "Cleanup":
                 CleanupPanel.Visibility = Visibility.Visible;
                 CleanupButton.Tag = "Active";
+                if (navigationActiveBrush != null) CleanupButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) CleanupIndicator.BorderBrush = primaryBrush;
                 break;
             case "Logs":
                 MainScrollViewer.Visibility = Visibility.Collapsed;
                 LogsPanel.Visibility = Visibility.Visible;
                 LogsButton.Tag = "Active";
+                if (navigationActiveBrush != null) LogsButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) LogsIndicator.BorderBrush = primaryBrush;
                 RefreshLogFiles();
                 break;
             case "About":
                 AboutPanel.Visibility = Visibility.Visible;
                 AboutButton.Tag = "Active";
+                if (navigationActiveBrush != null) AboutButton.Background = navigationActiveBrush;
+                if (primaryBrush != null) AboutIndicator.BorderBrush = primaryBrush;
                 break;
         }
     }
@@ -626,15 +658,36 @@ public sealed partial class MainWindow : Window
                     // Process any deferred unmounts (runs even if deferUnmounts was false - handles retry failures)
                     await _processor.ProcessDeferredUnmountsAsync(cancellationToken);
 
-                    // Check for any remaining active mounts and prompt for cleanup
+                    // Now run cleanup - this is awaited so we know the result before checking
+                    await _processor.Cleanup();
+
+                    // Check for any remaining active mounts OR leftover temp directory and prompt for cleanup
                     var activeMounts = await _processor.GetActiveMountsAsync();
-                    if (activeMounts.Count > 0)
+                    var tempDirExists = _processor.TempDirectoryExists;
+                    
+                    if (activeMounts.Count > 0 || tempDirExists)
                     {
-                        _logger?.LogWarning($"Found {activeMounts.Count} active mount(s) after processing");
+                        string cleanupReason;
+                        if (activeMounts.Count > 0 && tempDirExists)
+                        {
+                            cleanupReason = $"{activeMounts.Count} WIM mount(s) are still active and the temp directory was not fully cleaned up.";
+                            _logger?.LogWarning($"Found {activeMounts.Count} active mount(s) and temp directory still exists after processing");
+                        }
+                        else if (activeMounts.Count > 0)
+                        {
+                            cleanupReason = $"{activeMounts.Count} WIM mount(s) are still active.";
+                            _logger?.LogWarning($"Found {activeMounts.Count} active mount(s) after processing");
+                        }
+                        else
+                        {
+                            cleanupReason = "The temp directory was not fully cleaned up (files may be locked).";
+                            _logger?.LogWarning($"Temp directory still exists after processing: {_processor.TempDirectory}");
+                        }
+                        
                         DispatcherQueue.TryEnqueue(async () =>
                         {
                             var result = await ThemedMessageBox.ShowAsync(this,
-                                $"Processing completed, but {activeMounts.Count} WIM mount(s) are still active. Would you like to run Sweep Up to clean them?",
+                                $"Processing completed, but {cleanupReason} Would you like to run Sweep Up to clean them?",
                                 "Cleanup Recommended", false, "Sweep Up", "Skip");
                             if (result == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary)
                             {

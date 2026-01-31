@@ -3,7 +3,7 @@
 
 #define MyAppName "I.D.I.O.T."
 #define MyAppFullName "Image Driver Integration & Optimization Tool"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "KZNJK"
 #define MyAppURL "https://github.com/steeb-k/idiot"
 #define MyAppExeName "idiot.exe"

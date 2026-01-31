@@ -146,6 +146,9 @@ public static class CliRunner
                 driverDirs.Select(d => d.FullName).ToArray(), optimize);
         }
 
+        // Clean up temp directory
+        await processor.Cleanup();
+
         Console.WriteLine("\nProcessing completed successfully!");
         Console.WriteLine($"Check log file for details: {logger.LogFilePath}");
     }
