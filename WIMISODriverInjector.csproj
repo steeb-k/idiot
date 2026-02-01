@@ -13,7 +13,7 @@
     <RootNamespace>WIMISODriverInjector</RootNamespace>
     <Platforms>x64</Platforms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-      <Version>0.3.2</Version>
+      <Version>0.4.0</Version>
     <Authors>WIM-ISO-Driver-Injector</Authors>
     <Description>Portable tool for injecting drivers into Windows installer ISOs and WIM files</Description>
     
@@ -62,6 +62,7 @@
     <Content Include="Tools\oscdimg.exe" Link="Tools\oscdimg.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Tools\oscdimg.exe')" />
   </ItemGroup>
 </Project>
+
 
 
 
