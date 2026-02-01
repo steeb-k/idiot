@@ -252,19 +252,15 @@ namespace WIMISODriverInjector.Core
                         break;
                     }
 
-                    // Short wait for DISM to release file handles (avoid long blocking)
-                    _logger.LogInfo("Waiting for DISM to release file handles...");
-                    await Task.Delay(2000).ConfigureAwait(false);
+                    // Short wait for any file handles to be released
+                    _logger.LogInfo("Waiting for file handles to be released...");
+                    await Task.Delay(1000).ConfigureAwait(false);
                     
                     // Force garbage collection to help release any managed handles
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
-                    await Task.Delay(1000).ConfigureAwait(false);
-                    
-                    // Try to take ownership and reset permissions on locked files
-                    _logger.LogInfo("Attempting to take ownership and reset permissions on locked files...");
-                    await TakeOwnershipAndResetPermissions(_tempDirectory);
+                    await Task.Delay(500).ConfigureAwait(false);
 
                     // Try to delete individual files first to avoid permission issues
                     // Use retry logic for locked files
@@ -599,7 +595,7 @@ namespace WIMISODriverInjector.Core
             }
         }
 
-        public async Task ProcessISO(string isoPath, string outputIsoPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, Dictionary<string, List<int>>? selectedVersionsByWim = null, string? mountedDriveLetter = null, bool deferUnmounts = true)
+        public async Task ProcessISO(string isoPath, string outputIsoPath, string[] driverDirectories, bool optimize, CancellationToken cancellationToken = default, Dictionary<string, List<int>>? selectedVersionsByWim = null, string? mountedDriveLetter = null, bool deferUnmounts = true, string? volumeLabel = null)
         {
             var isoFileInfo = new FileInfo(isoPath);
             _logger.LogInfo($"=== Processing ISO File ===");
@@ -607,6 +603,8 @@ namespace WIMISODriverInjector.Core
             _logger.LogInfo($"ISO Full Path: {isoPath}");
             _logger.LogInfo($"ISO Size: {isoFileInfo.Length / (1024.0 * 1024.0):F2} MB");
             _logger.LogInfo($"Output ISO: {outputIsoPath}");
+            if (!string.IsNullOrWhiteSpace(volumeLabel))
+                _logger.LogInfo($"Volume Label: {volumeLabel}");
 
             // Prevent system sleep during long-running operation
             PreventSleep();
@@ -792,7 +790,7 @@ namespace WIMISODriverInjector.Core
                 _logger.LogInfo($"=== ISO Creation ===");
                 _logger.LogInfo($"Creating output ISO: {outputIsoPath}");
                 _logger.LogInfo($"Source Directory: {extractPath}");
-                await CreateISO(extractPath, outputIsoPath, cancellationToken);
+                await CreateISO(extractPath, outputIsoPath, volumeLabel, cancellationToken);
                 var outputInfo = new FileInfo(outputIsoPath);
                 _logger.LogInfo($"Output ISO created successfully");
                 _logger.LogInfo($"Output ISO Size: {outputInfo.Length / (1024.0 * 1024.0):F2} MB");
@@ -980,39 +978,8 @@ namespace WIMISODriverInjector.Core
 
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // No need to unmount again - we already did it above
-                        bool moreImagesFromSameWim = imgIdx < indexesToProcess.Count - 1;
-                        
-                        if (moreImagesFromSameWim)
-                        {
-                            // Must unmount synchronously - DISM requires this before mounting next index
-                            if (deferUnmounts)
-                            {
-                                // Even when deferring, we MUST wait for this unmount
-                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
-                            }
-                            else
-                            {
-                                // Inline mode: unmount with retries
-                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
-                            }
-                        }
-                        else
-                        {
-                            // Last image (or only image) - can potentially defer
-                            if (deferUnmounts)
-                            {
-                                // Queue for later unmount
-                                _deferredUnmounts.Add(mountPath);
-                                _logger.LogInfo($"Deferred unmount queued for: {mountPath}");
-                            }
-                            else
-                            {
-                                // Inline mode: unmount with retries
-                                await UnmountWIMWithRetry(mountPath, false, cancellationToken, maxRetries: 5);
-                            }
-                        }
-                        isMounted = false;
+                        // No need to unmount again - we already did it above with commit
+                        // isMounted is already set to false after the commit unmount
                     }
                     catch (Exception ex)
                     {
@@ -2694,7 +2661,7 @@ del ""%~f0""
                 $"Application folder: {appDir}");
         }
 
-        private async Task CreateISO(string sourcePath, string outputIsoPath, CancellationToken cancellationToken = default)
+        private async Task CreateISO(string sourcePath, string outputIsoPath, string? volumeLabel = null, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo("Creating ISO file...");
 
@@ -2703,15 +2670,20 @@ del ""%~f0""
             var oscdimgPath = FindOSCDIMG();
             if (oscdimgPath != null)
             {
+                // Build the volume label argument if provided
+                var labelArg = string.IsNullOrWhiteSpace(volumeLabel) ? "" : $"-l\"{volumeLabel}\" ";
+                
                 var processInfo = new ProcessStartInfo
                 {
                     FileName = oscdimgPath,
-                    Arguments = $"-m -o -u2 -udfver102 -bootdata:2#p0,e,b\"{sourcePath}\\boot\\etfsboot.com\"#pEF,e,b\"{sourcePath}\\efi\\Microsoft\\boot\\efisys.bin\" \"{sourcePath}\" \"{outputIsoPath}\"",
+                    Arguments = $"-m -o -u2 -udfver102 {labelArg}-bootdata:2#p0,e,b\"{sourcePath}\\boot\\etfsboot.com\"#pEF,e,b\"{sourcePath}\\efi\\Microsoft\\boot\\efisys.bin\" \"{sourcePath}\" \"{outputIsoPath}\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
                 };
+                
+                _logger.LogInfo($"Executing: oscdimg.exe {processInfo.Arguments}");
 
                 using var process = Process.Start(processInfo);
                 if (process != null)

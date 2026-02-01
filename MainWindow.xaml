@@ -139,6 +139,11 @@
                                 <Button x:Name="BrowseOutputButton" Grid.Column="1" Content="Browse..." Click="BrowseOutputFile_Click" Style="{StaticResource ButtonStyle}" Width="100"/>
                             </Grid>
                         </StackPanel>
+                        <!-- ISO Volume Label (only visible for ISO files) -->
+                        <StackPanel x:Name="VolumeLabelPanel" Margin="0,0,0,20" Visibility="Collapsed">
+                            <TextBlock Text="ISO Volume Label" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <TextBox x:Name="VolumeLabelTextBox" MaxLength="32" PlaceholderText="e.g. WIN11_25H2_CUSTOM"/>
+                        </StackPanel>
                         <!-- Scratch Drive selection -->
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="Scratch Drive" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>

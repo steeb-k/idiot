@@ -654,6 +654,7 @@ public sealed partial class MainWindow : Window
             _wimFiles.Clear();
             _wimFiles.Add(path);
             WimFilesPanel.Visibility = Visibility.Visible;
+            VolumeLabelPanel.Visibility = Visibility.Collapsed; // Hide volume label for WIM files
             if (Path.GetFileName(path).Equals("install.wim", StringComparison.OrdinalIgnoreCase))
                 await LoadWimVersions(path);
         }
@@ -678,6 +679,21 @@ public sealed partial class MainWindow : Window
 
             ExtractionStatusText.Text = "Scanning for WIM files...";
             var mountedPath = $"{_mountedIsoDrive}:\\";
+            
+            // Get and display the volume label from the mounted ISO
+            try
+            {
+                var driveInfo = new DriveInfo(_mountedIsoDrive);
+                var volumeLabel = driveInfo.VolumeLabel;
+                VolumeLabelTextBox.Text = string.IsNullOrWhiteSpace(volumeLabel) ? "" : volumeLabel;
+                VolumeLabelPanel.Visibility = Visibility.Visible;
+            }
+            catch
+            {
+                VolumeLabelTextBox.Text = "";
+                VolumeLabelPanel.Visibility = Visibility.Visible;
+            }
+            
             var wimFiles = Directory.GetFiles(mountedPath, "*.wim", SearchOption.AllDirectories);
             _wimFiles.Clear();
             foreach (var w in wimFiles)
@@ -977,6 +993,7 @@ public sealed partial class MainWindow : Window
             var outputPath = OutputFileTextBox.Text;
             var driverDirs = _driverDirectories.ToArray();
             var useMaxCompression = CompressionComboBox.SelectedIndex == 1; // 0 = Fast, 1 = Maximum
+            var volumeLabel = VolumeLabelTextBox.Text; // Capture volume label on UI thread
 
             StatusTextBlock.Text = "Processing...";
             ProgressBar.IsIndeterminate = true;
@@ -1005,7 +1022,7 @@ public sealed partial class MainWindow : Window
                             mountedDrive = _mountedIsoDrive;
                             _logger?.LogInfo($"Using already-mounted ISO drive: {mountedDrive}:\\");
                         }
-                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, useMaxCompression, cancellationToken, selectedByWim, mountedDrive);
+                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, useMaxCompression, cancellationToken, selectedByWim, mountedDrive, volumeLabel: volumeLabel);
                     }
                     else
                     {
