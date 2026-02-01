@@ -3,7 +3,7 @@
 
 #define MyAppName "I.D.I.O.T."
 #define MyAppFullName "Image Driver Integration & Optimization Tool"
-#define MyAppVersion "0.3.1"
+#define MyAppVersion "0.3.2"
 #define MyAppPublisher "KZNJK"
 #define MyAppURL "https://github.com/steeb-k/idiot"
 #define MyAppExeName "idiot.exe"
@@ -66,6 +66,7 @@ begin
     'installer ISOs and WIM files.' + #13#10 + #13#10 +
     'Click Next to continue, or Cancel to exit Setup.';
 end;
+
 
 
 

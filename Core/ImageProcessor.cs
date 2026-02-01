@@ -949,8 +949,16 @@ namespace WIMISODriverInjector.Core
 
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // Export to new WIM file instead of committing to original
-                        // This avoids file locking issues
+                        // Unmount with commit to save the modified image back to the WIM
+                        UpdateStatus($"Saving modified image {index.Index}...");
+                        _logger.LogInfo($"=== Unmounting and Committing Image {index.Index} ===");
+                        await UnmountWIM(mountPath, commit: true, cancellationToken);
+                        isMounted = false;
+                        _logger.LogSuccess($"Image {index.Index} unmounted with modifications saved");
+
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // Export modified WIM to new WIM file
                         UpdateStatus($"Exporting image {index.Index} to new WIM file...");
                         _logger.LogInfo($"=== Exporting Image {index.Index} to New WIM ===");
                         _logger.LogInfo($"Image Name: {index.Name}");
@@ -961,21 +969,18 @@ namespace WIMISODriverInjector.Core
                         
                         if (imgIdx == 0)
                         {
-                            // First image - create new WIM file
-                            await ExportImageToNewWIM(mountPath, newWimPath, index.Name, optimize, shouldBeBootable, cancellationToken);
+                            // First image - export to new WIM file
+                            await ExportWimIndex(wimPath, index.Index, newWimPath, index.Name, optimize, shouldBeBootable, cancellationToken);
                         }
                         else
                         {
-                            // Subsequent images - append to existing WIM
-                            // Note: AppendImageToWIM needs to support bootable flag for correct boot.wim handling
-                            await AppendImageToWIM(mountPath, newWimPath, index.Name, optimize, cancellationToken, shouldBeBootable);
+                            // Subsequent images - export and append to existing WIM
+                            await ExportWimIndex(wimPath, index.Index, newWimPath, index.Name, optimize, shouldBeBootable, cancellationToken);
                         }
 
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        // Unmount handling depends on deferUnmounts setting
-                        // When deferring: we still MUST unmount between images from the same WIM (DISM locks the WIM)
-                        // but we can defer unmounts that would otherwise run in background mode
+                        // No need to unmount again - we already did it above
                         bool moreImagesFromSameWim = imgIdx < indexesToProcess.Count - 1;
                         
                         if (moreImagesFromSameWim)
@@ -1171,8 +1176,6 @@ namespace WIMISODriverInjector.Core
 
             var outputBuilder = new System.Text.StringBuilder();
             var errorBuilder = new System.Text.StringBuilder();
-            long lastFileSize = 0;
-            DateTime lastUpdateTime = DateTime.Now;
             
             // Start reading both streams incrementally with progress monitoring
             var outputTask = Task.Run(async () =>
@@ -1227,58 +1230,13 @@ namespace WIMISODriverInjector.Core
                 catch { }
             }, cancellationToken);
 
-            // Monitor file size growth as fallback progress indicator
-            var progressMonitorTask = Task.Run(async () =>
-            {
-                while (!process.HasExited)
-                {
-                    try
-                    {
-                        if (File.Exists(outputWimPath))
-                        {
-                            var fileInfo = new FileInfo(outputWimPath);
-                            var currentSize = fileInfo.Length;
-                            
-                            // Update progress every 2 seconds
-                            if ((DateTime.Now - lastUpdateTime).TotalSeconds >= 2.0)
-                            {
-                                if (estimatedSourceSize > 0 && currentSize > 0)
-                                {
-                                    // Rough estimate: WIM compression means output is typically 30-70% of source
-                                    // Use a conservative estimate of 50% compression
-                                    var estimatedFinalSize = estimatedSourceSize * 0.5;
-                                    var progressPercent = Math.Min(99, (int)((currentSize / estimatedFinalSize) * 100));
-                                    
-                                    if (progressPercent > 0)
-                                    {
-                                        UpdateStatus($"Capturing image... ~{progressPercent}% (estimated from file size)");
-                                        _logger.LogInfo($"Estimated progress from file size: {progressPercent}% (Output: {currentSize / (1024.0 * 1024.0):F2} MB)");
-                                    }
-                                }
-                                else if (currentSize > lastFileSize)
-                                {
-                                    // File is growing - show size
-                                    var sizeMB = currentSize / (1024.0 * 1024.0);
-                                    UpdateStatus($"Capturing image... ({sizeMB:F1} MB written, still processing...)");
-                                    _logger.LogInfo($"Output WIM size: {sizeMB:F2} MB (growing...)");
-                                }
-                                
-                                lastFileSize = currentSize;
-                                lastUpdateTime = DateTime.Now;
-                            }
-                        }
-                    }
-                    catch { }
-                    
-                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
-                }
-            }, cancellationToken);
+            // File size progress monitoring removed - rely only on DISM's native progress output
             
             // Wait for process to exit asynchronously
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
             
             // Wait for stream reads to complete
-            await Task.WhenAll(outputTask, errorTask, progressMonitorTask).ConfigureAwait(false);
+            await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
             
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -1721,12 +1679,6 @@ namespace WIMISODriverInjector.Core
             if (timedOut)
             {
                 throw new MountTimeoutException($"DISM mount operation timed out after {MountTimeout.TotalMinutes} minutes for index {index}");
-            }
-
-            // Log DISM output for debugging
-            if (!string.IsNullOrWhiteSpace(output))
-            {
-                _logger.LogInfo($"DISM output: {output.Trim()}");
             }
 
             if (exitCode != 0)
@@ -2330,22 +2282,55 @@ del ""%~f0""
                 _logger.LogInfo($"Bootable: Yes (required for Windows PE boot)");
             }
             
-            // Use DISM /Capture-Image to create a new WIM from the mounted directory
-            // Only compress if optimization is enabled
-            // Add /Bootable flag for boot.wim first index (Windows PE) - this is CRITICAL for booting
+            // Capture to a temporary WIM file first, then export to the final WIM
+            var tempWimPath = Path.Combine(_tempDirectory, $"temp_capture_{Path.GetFileName(outputWimPath)}");
+            if (File.Exists(tempWimPath))
+            {
+                File.Delete(tempWimPath);
+            }
+            
+            // First, capture the mounted directory to a temp WIM
             var compressArg = optimize ? "/Compress:maximum" : "/Compress:none";
             var bootableArg = bootable ? "/Bootable" : "";
-            var arguments = $"/Capture-Image /ImageFile:\"{outputWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg} {bootableArg}".Trim();
+            var captureArgs = $"/Capture-Image /ImageFile:\"{tempWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg} {bootableArg}".Trim();
+            _logger.LogInfo($"Executing: dism.exe {captureArgs}");
+            LogToGui($"Executing: dism.exe {captureArgs}");
+
+            var (captureOutput, captureError, captureExitCode) = await RunProcessAsync("dism.exe", captureArgs, cancellationToken);
+
+            if (captureExitCode != 0)
+            {
+                var errorMessage = !string.IsNullOrWhiteSpace(captureError) ? captureError : !string.IsNullOrWhiteSpace(captureOutput) ? captureOutput : $"DISM exited with code {captureExitCode}";
+                _logger.LogError($"DISM capture failed: {errorMessage.Trim()}");
+                throw new Exception($"DISM capture failed: {errorMessage.Trim()}");
+            }
+
+            // Now export from the temp WIM to create the final WIM
+            var exportBootableArg = bootable ? "/Bootable" : "";
+            var arguments = $"/Export-Image /SourceImageFile:\"{tempWimPath}\" /SourceIndex:1 /DestinationImageFile:\"{outputWimPath}\" {exportBootableArg}".Trim();
             _logger.LogInfo($"Executing: dism.exe {arguments}");
             LogToGui($"Executing: dism.exe {arguments}");
 
-            var (output, error, exitCode) = await RunCaptureImageWithProgress("dism.exe", arguments, outputWimPath, mountPath, cancellationToken).ConfigureAwait(false);
+            var (exportOutput, exportError, exportExitCode) = await RunProcessAsync("dism.exe", arguments, cancellationToken);
 
-            if (exitCode != 0)
+            if (exportExitCode != 0)
             {
-                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
-                _logger.LogError($"DISM capture failed: {errorMessage.Trim()}");
-                throw new Exception($"DISM capture failed: {errorMessage.Trim()}");
+                var errorMessage = !string.IsNullOrWhiteSpace(exportError) ? exportError : !string.IsNullOrWhiteSpace(exportOutput) ? exportOutput : $"DISM exited with code {exportExitCode}";
+                _logger.LogError($"DISM export failed: {errorMessage.Trim()}");
+                throw new Exception($"DISM export failed: {errorMessage.Trim()}");
+            }
+
+            // Clean up temp WIM file
+            try
+            {
+                if (File.Exists(tempWimPath))
+                {
+                    File.Delete(tempWimPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not delete temp WIM file: {ex.Message}");
             }
 
             _logger.LogSuccess($"Image exported to new WIM file successfully");
@@ -2379,7 +2364,6 @@ del ""%~f0""
             }
             
             // First, capture the mounted directory to a temp WIM
-            // If this image should be bootable, add the /Bootable flag to capture
             var compressArg = optimize ? "/Compress:maximum" : "/Compress:none";
             var bootableArg = bootable ? "/Bootable" : "";
             var captureArgs = $"/Capture-Image /ImageFile:\"{tempWimPath}\" /CaptureDir:\"{mountPath}\" /Name:\"{imageName}\" {compressArg} {bootableArg}".Trim();
@@ -2396,7 +2380,6 @@ del ""%~f0""
             }
 
             // Now export from the temp WIM to append to the main WIM
-            // If bootable, add /Bootable flag to export to set the boot index
             var exportBootableArg = bootable ? "/Bootable" : "";
             var arguments = $"/Export-Image /SourceImageFile:\"{tempWimPath}\" /SourceIndex:1 /DestinationImageFile:\"{wimPath}\" {exportBootableArg}".Trim();
             _logger.LogInfo($"Executing: dism.exe {arguments}");
@@ -2517,6 +2500,49 @@ del ""%~f0""
         /// <param name="outputWimPath">Destination WIM file path</param>
         /// <param name="isBootWim">If true, preserves bootable flag based on original boot index (required for boot.wim)</param>
         /// <param name="cancellationToken">Cancellation token</param>
+        /// <summary>
+        /// Exports a specific WIM index to a new or existing WIM file
+        /// </summary>
+        private async Task ExportWimIndex(string sourceWimPath, int sourceIndex, string destWimPath, string imageName, bool optimize, bool bootable, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            _logger.LogInfo($"Exporting index {sourceIndex} to WIM file: {destWimPath}");
+            _logger.LogInfo($"Image Name: {imageName}");
+            if (bootable)
+            {
+                _logger.LogInfo($"Bootable: Yes");
+            }
+
+            // Delete output file if it doesn't exist yet - DISM Export-Image appends when destination exists
+            bool isFirstImage = !File.Exists(destWimPath);
+            if (isFirstImage)
+            {
+                _logger.LogInfo($"Creating new WIM file");
+            }
+            else
+            {
+                _logger.LogInfo($"Appending to existing WIM file");
+            }
+
+            var compressArg = optimize ? "/Compress:maximum" : "/Compress:none";
+            var bootableArg = bootable ? "/Bootable" : "";
+            var arguments = $"/Export-Image /SourceImageFile:\"{sourceWimPath}\" /SourceIndex:{sourceIndex} /DestinationImageFile:\"{destWimPath}\" {compressArg} {bootableArg}".Trim();
+            _logger.LogInfo($"Executing: dism.exe {arguments}");
+            LogToGui($"Executing: dism.exe {arguments}");
+
+            var (output, error, exitCode) = await RunProcessAsync("dism.exe", arguments, cancellationToken);
+
+            if (exitCode != 0)
+            {
+                var errorMessage = !string.IsNullOrWhiteSpace(error) ? error : !string.IsNullOrWhiteSpace(output) ? output : $"DISM exited with code {exitCode}";
+                _logger.LogError($"DISM export failed: {errorMessage.Trim()}");
+                throw new Exception($"DISM export failed: {errorMessage.Trim()}");
+            }
+
+            _logger.LogSuccess($"Index {sourceIndex} exported successfully");
+        }
+
         private async Task OptimizeWIM(string inputWimPath, string outputWimPath, bool isBootWim = false, CancellationToken cancellationToken = default)
         {
             _logger.LogInfo("Optimizing WIM file...");
