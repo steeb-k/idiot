@@ -4,7 +4,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -25,6 +28,9 @@ namespace WIMISODriverInjector;
 
 public sealed partial class MainWindow : Window
 {
+    private static readonly HttpClient HttpClient = new();
+    private const string GitHubReleasesApiUrl = "https://api.github.com/repos/steeb-k/idiot/releases";
+    private const string GitHubReleasesPageUrl = "https://github.com/steeb-k/idiot/releases/latest";
     private readonly ObservableCollection<string> _driverDirectories = new();
     private readonly ObservableCollection<string> _wimFiles = new();
     private readonly ObservableCollection<VersionItem> _versionItems = new();
@@ -69,6 +75,9 @@ public sealed partial class MainWindow : Window
             ImageSelectionButton.Tag = "ImageSelection";
             ShowSection("ImageSelection");
             RefreshLogFiles();
+
+            SetAboutVersionText();
+            _ = CheckForUpdatesOnStartupAsync();
 
             Closed += Window_Closed;
         }
@@ -120,6 +129,358 @@ public sealed partial class MainWindow : Window
             }
         }
         catch { }
+    }
+
+    private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        CheckUpdatesButton.IsEnabled = false;
+        var originalContent = CheckUpdatesButton.Content;
+        CheckUpdatesButton.Content = "Checking...";
+
+        try
+        {
+            var currentVersionText = GetAppVersionFromJson();
+            var currentVersion = ParseVersion(currentVersionText);
+
+            var latestResult = await GetLatestReleaseInfoAsync();
+            if (latestResult == null || latestResult.Info == null)
+            {
+                var errorMessage = latestResult?.ErrorMessage ?? "Unable to check for updates right now.";
+                await ThemedMessageBox.ShowAsync(this, errorMessage, "Update Check", false);
+                return;
+            }
+
+            var latestInfo = latestResult.Info;
+            var latestVersion = latestInfo.Version;
+            if (latestVersion > currentVersion)
+            {
+                await PromptUpdateAndInstallAsync(currentVersionText, latestInfo);
+            }
+            else
+            {
+                await ThemedMessageBox.ShowAsync(this, $"You're up to date.\n\nCurrent: {currentVersionText}", "No Updates", false);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ThemedMessageBox.ShowAsync(this, $"Update check failed:\n\n{ex.Message}", "Update Check", true);
+        }
+        finally
+        {
+            CheckUpdatesButton.Content = originalContent;
+            CheckUpdatesButton.IsEnabled = true;
+        }
+    }
+
+    private static Version ParseVersion(string versionText)
+    {
+        var normalized = versionText.Trim();
+        if (normalized.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized.Substring(1);
+        }
+
+        var basePart = normalized.Split('-', 2)[0];
+        return Version.TryParse(basePart, out var parsed) ? parsed : new Version(0, 0, 0);
+    }
+
+    private static async Task<LatestReleaseResult?> GetLatestReleaseInfoAsync()
+    {
+        if (!HttpClient.DefaultRequestHeaders.UserAgent.Any())
+        {
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("idiot-update-checker");
+        }
+        if (!HttpClient.DefaultRequestHeaders.Accept.Any())
+        {
+            HttpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        }
+
+        try
+        {
+            using var response = await HttpClient.GetAsync(GitHubReleasesApiUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var document = await JsonDocument.ParseAsync(stream);
+                var root = document.RootElement;
+                if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
+                {
+                    return new LatestReleaseResult { ErrorMessage = "No GitHub releases found." };
+                }
+
+                JsonElement? selectedRelease = null;
+                foreach (var release in root.EnumerateArray())
+                {
+                    if (release.TryGetProperty("draft", out var draftElement) && draftElement.GetBoolean())
+                    {
+                        continue;
+                    }
+
+                    selectedRelease = release;
+                    break;
+                }
+
+                if (selectedRelease == null)
+                {
+                    return new LatestReleaseResult { ErrorMessage = "No published GitHub releases found." };
+                }
+
+                var releaseValue = selectedRelease.Value;
+                var tagName = releaseValue.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString() : null;
+                var releaseUrl = releaseValue.TryGetProperty("html_url", out var urlElement) ? urlElement.GetString() : null;
+                var installerUrl = ExtractInstallerUrl(releaseValue);
+                var versionText = tagName ?? "";
+                var version = ParseVersion(versionText);
+
+                return new LatestReleaseResult
+                {
+                    Info = new LatestReleaseInfo
+                    {
+                        Version = version,
+                        VersionText = versionText,
+                        ReleaseUrl = releaseUrl ?? GitHubReleasesPageUrl,
+                        InstallerUrl = installerUrl
+                    }
+                };
+            }
+
+            var status = (int)response.StatusCode;
+            var reason = response.ReasonPhrase ?? "";
+            var error = $"Update check failed (API): {status} {reason}.";
+            var fallback = await TryFallbackReleasePageAsync();
+            if (fallback != null)
+            {
+                return new LatestReleaseResult { Info = fallback, ErrorMessage = error };
+            }
+
+            return new LatestReleaseResult { ErrorMessage = error };
+        }
+        catch (Exception ex)
+        {
+            var fallback = await TryFallbackReleasePageAsync();
+            if (fallback != null)
+            {
+                return new LatestReleaseResult { Info = fallback, ErrorMessage = $"Update check fell back after error: {ex.Message}" };
+            }
+
+            return new LatestReleaseResult { ErrorMessage = $"Unable to check for updates: {ex.Message}" };
+        }
+    }
+
+    private static async Task<LatestReleaseInfo?> TryFallbackReleasePageAsync()
+    {
+        try
+        {
+            using var response = await HttpClient.GetAsync(GitHubReleasesPageUrl, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var finalUri = response.RequestMessage?.RequestUri?.ToString() ?? "";
+            var versionText = ExtractVersionFromUrl(finalUri);
+            if (string.IsNullOrWhiteSpace(versionText))
+            {
+                return null;
+            }
+
+            return new LatestReleaseInfo
+            {
+                Version = ParseVersion(versionText),
+                VersionText = versionText,
+                ReleaseUrl = finalUri
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string ExtractVersionFromUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return string.Empty;
+        }
+
+        var lastSegment = url.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
+        if (lastSegment.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+        {
+            lastSegment = lastSegment.Substring(1);
+        }
+        return lastSegment;
+    }
+
+    private static string? ExtractInstallerUrl(JsonElement releaseElement)
+    {
+        if (!releaseElement.TryGetProperty("assets", out var assetsElement) || assetsElement.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        foreach (var asset in assetsElement.EnumerateArray())
+        {
+            var name = asset.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && name.Contains("installer", StringComparison.OrdinalIgnoreCase))
+            {
+                var url = asset.TryGetProperty("browser_download_url", out var urlElement) ? urlElement.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    return url;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private async Task PromptUpdateAndInstallAsync(string currentVersionText, LatestReleaseInfo latestInfo)
+    {
+        var message = $"A newer version is available.\n\nCurrent: {currentVersionText}\nLatest: {latestInfo.VersionText}\n\nDo you want to download and install it now?";
+
+        var dialog = new ContentDialog
+        {
+            Title = "Update Available",
+            Content = message,
+            PrimaryButtonText = "Download & Install",
+            CloseButtonText = "Later",
+            XamlRoot = Content.XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary)
+        {
+            UpdateAvailableText.Visibility = Visibility.Visible;
+            return;
+        }
+
+        UpdateAvailableText.Visibility = Visibility.Collapsed;
+        await DownloadInstallAndCloseAsync(latestInfo);
+    }
+
+    private async Task DownloadInstallAndCloseAsync(LatestReleaseInfo latestInfo)
+    {
+        if (string.IsNullOrWhiteSpace(latestInfo.InstallerUrl))
+        {
+            await ThemedMessageBox.ShowAsync(this, "No installer asset was found for the latest release.", "Update", false);
+            return;
+        }
+
+        var tempFile = Path.Combine(Path.GetTempPath(), $"idiot-{latestInfo.VersionText}-installer.exe");
+
+        try
+        {
+            CheckUpdatesButton.IsEnabled = false;
+            CheckUpdatesButton.Content = "Downloading...";
+
+            using var response = await HttpClient.GetAsync(latestInfo.InstallerUrl, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            await using (var fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await response.Content.CopyToAsync(fs);
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = tempFile,
+                UseShellExecute = true
+            };
+
+            Process.Start(startInfo);
+
+            Close();
+        }
+        catch (Exception ex)
+        {
+            await ThemedMessageBox.ShowAsync(this, $"Failed to download or start the installer:\n\n{ex.Message}", "Update", true);
+        }
+        finally
+        {
+            CheckUpdatesButton.Content = "Check for Updates";
+            CheckUpdatesButton.IsEnabled = true;
+        }
+    }
+
+    private sealed class LatestReleaseInfo
+    {
+        public required Version Version { get; init; }
+        public required string VersionText { get; init; }
+        public required string ReleaseUrl { get; init; }
+        public string? InstallerUrl { get; init; }
+    }
+
+    private sealed class LatestReleaseResult
+    {
+        public LatestReleaseInfo? Info { get; init; }
+        public string? ErrorMessage { get; init; }
+    }
+
+    private void SetAboutVersionText()
+    {
+        try
+        {
+            var version = GetAppVersionFromJson();
+            AboutVersionText.Text = $"Version {version}";
+        }
+        catch
+        {
+            AboutVersionText.Text = "Version Unknown";
+        }
+    }
+
+    private async Task CheckForUpdatesOnStartupAsync()
+    {
+        try
+        {
+            await Task.Delay(2000);
+
+            var currentVersionText = GetAppVersionFromJson();
+            var currentVersion = ParseVersion(currentVersionText);
+
+            var latestResult = await GetLatestReleaseInfoAsync();
+            if (latestResult?.Info == null)
+            {
+                return;
+            }
+
+            var latestInfo = latestResult.Info;
+            if (latestInfo.Version > currentVersion)
+            {
+                await PromptUpdateAndInstallAsync(currentVersionText, latestInfo);
+            }
+        }
+        catch
+        {
+            // Silently fail startup update check
+        }
+    }
+
+    private static string GetAppVersionFromJson()
+    {
+        var versionFilePath = Path.Combine(AppContext.BaseDirectory, "version.json");
+        if (File.Exists(versionFilePath))
+        {
+            using var stream = File.OpenRead(versionFilePath);
+            using var document = JsonDocument.Parse(stream);
+            if (document.RootElement.TryGetProperty("version", out var versionElement))
+            {
+                var versionValue = versionElement.GetString();
+                if (!string.IsNullOrWhiteSpace(versionValue))
+                {
+                    return versionValue;
+                }
+            }
+        }
+
+        var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        return assemblyVersion?.ToString(3) ?? "Unknown";
     }
 
     private void SetupMicaBackdrop()

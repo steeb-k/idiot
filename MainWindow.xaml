@@ -210,12 +210,15 @@
 
                     <!-- About Section -->
                     <StackPanel x:Name="AboutPanel" Visibility="Collapsed">
-                        <TextBlock Text="About" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
-                        <TextBlock Text="I.D.I.O.T." FontSize="20" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,5"/>
-                        <TextBlock Text="Image Driver Integration &amp; Optimization Tool" FontSize="14" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,30"/>
-                        <TextBlock Text="A portable tool for injecting drivers into Windows installer images." FontSize="14" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
-                        <TextBlock Text="Features:" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,10"/>
-                        <TextBlock Text="• Inject drivers into Windows installer ISO/WIM files&#x0a;• Select specific Windows versions to include&#x0a;• Optimize and shrink WIM files&#x0a;• Modern Windows 11 interface&#x0a;• Portable and self-contained" FontSize="12" Foreground="{ThemeResource PrimaryTextBrush}" Margin="20,0,0,0"/>
+                        <TextBlock Text="About" FontSize="26" FontWeight="Bold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+                        <TextBlock Text="I.D.I.O.T." FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Image Driver Integration &amp; Optimization Tool" FontSize="16" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,6"/>
+                        <TextBlock x:Name="AboutVersionText" Text="Version" FontSize="14" Foreground="{ThemeResource SecondaryTextBrush}" Margin="0,0,0,24"/>
+                        <Button x:Name="CheckUpdatesButton" Content="Check for Updates" Click="CheckForUpdates_Click" Style="{StaticResource PrimaryButtonStyle}" FontSize="16" HorizontalAlignment="Left" Padding="16,8" Margin="0,0,0,12"/>
+                        <TextBlock x:Name="UpdateAvailableText" Text="A newer version is available!" FontSize="14" Foreground="#FF4CAF50" FontWeight="SemiBold" Visibility="Collapsed" Margin="0,0,0,24"/>
+                        <TextBlock Text="A portable tool for injecting drivers into Windows installer images." FontSize="16" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Features:" FontSize="16" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,10"/>
+                        <TextBlock Text="• Inject drivers into Windows installer ISO/WIM files&#x0a;• Select specific Windows versions to include&#x0a;• Optimize and shrink WIM files&#x0a;• Modern Windows 11 interface&#x0a;• Portable and self-contained" FontSize="14" Foreground="{ThemeResource PrimaryTextBrush}" Margin="20,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
