@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace WIMISODriverInjector.Core;
@@ -336,6 +337,8 @@ public static class CleanupService
         return (output, error, process.ExitCode);
     }
 
+    private static readonly TimeSpan OwnershipTimeout = TimeSpan.FromSeconds(30);
+
     private static async Task TakeOwnershipAndResetPermissions(string directoryPath)
     {
         using (var takeown = Process.Start(new ProcessStartInfo
@@ -346,7 +349,14 @@ public static class CleanupService
             CreateNoWindow = true
         }))
         {
-            if (takeown != null) await takeown.WaitForExitAsync();
+            if (takeown != null)
+            {
+                var completed = await WaitForExitWithTimeoutAsync(takeown, OwnershipTimeout);
+                if (!completed)
+                {
+                    try { takeown.Kill(); } catch { }
+                }
+            }
         }
         using (var icacls = Process.Start(new ProcessStartInfo
         {
@@ -356,7 +366,14 @@ public static class CleanupService
             CreateNoWindow = true
         }))
         {
-            if (icacls != null) await icacls.WaitForExitAsync();
+            if (icacls != null)
+            {
+                var completed = await WaitForExitWithTimeoutAsync(icacls, OwnershipTimeout);
+                if (!completed)
+                {
+                    try { icacls.Kill(); } catch { }
+                }
+            }
         }
     }
 
@@ -410,5 +427,19 @@ del ""%~f0""
             if (process != null) await process.WaitForExitAsync();
         }
         catch { }
+    }
+
+    private static async Task<bool> WaitForExitWithTimeoutAsync(Process process, TimeSpan timeout)
+    {
+        using var cts = new CancellationTokenSource(timeout);
+        try
+        {
+            await process.WaitForExitAsync(cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
     }
 }

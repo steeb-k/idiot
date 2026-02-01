@@ -26,12 +26,16 @@ A standard USA Windows 11 25H2 installation ISO from Microsoft has ELEVEN versio
 * Intel i5-14400 @ 2.5 GHz
 
 ### Results
-Generating a new ISO using only 2 indexes takes about **37 minutes.** The installer indexes take about 15 minutes a pop up on this setup.
+Generating a new ISO using all 11 indexes takes about **47 minutes.**
+
+Generating a new ISO using only 2 indexes takes about **19 minutes.**
 
 ## What you'll want
-Plenty of storage space. Each index in a WIM file unpacks to a whopping 32GB on top of the ~8GB we need to extract from the ISO. The default method waits until all WIMs are done being processed to unmount the WIM files to speed the actual ISO generation process up, but if you want to do all 11 indexes in your installer and do NOT have ~400GB available, you can opt to have unmount commands run during the process. Bear in mind, that will dramatically slow down the ultimate ISO generation, so if you have the space, use it.
+Plenty of storage space. Each index in a WIM file unpacks to a whopping 32GB on top of the ~8GB we need to extract from the ISO. We try to unmount WIM files as we go, but that can fail as DISM is a pretty fickle little guy. 
 
 There is a Cleanup section inside the app that will find any dangling WIM files that fail to dismount and delete them. If it can't, it will write a scheduled task to run on the next startup that will. It has been pretty reliable in my testing. 
+
+Until all the kinks are worked out, you'll want to make good use of the Sweep Up function in the Cleanup pane.
 
 Keep scrolling to see the AI-generated README file that existed before I wrote this one. It's probably a lot more informative but may also be a lot less truthful. Enjoy!
 

@@ -144,15 +144,14 @@
                             <TextBlock Text="Scratch Drive" FontSize="14" FontWeight="SemiBold" Foreground="{ThemeResource PrimaryTextBrush}" Margin="0,0,0,8"/>
                             <ComboBox x:Name="ScratchDriveComboBox" Height="40"/>
                         </StackPanel>
-                        <!-- Checkboxes moved here below Scratch Drive -->
+                        <!-- Compression option -->
                         <StackPanel Margin="0,0,0,20">
-                            <CheckBox x:Name="OptimizeCheckBox" Content="Optimize and shrink WIM file after injection" IsChecked="True" Margin="0,5" Foreground="{ThemeResource PrimaryTextBrush}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,5">
-                                <CheckBox x:Name="DeferUnmountsCheckBox" Content="Perform unmount operations last" IsChecked="True" Foreground="{ThemeResource PrimaryTextBrush}"/>
-                                <TextBlock Text="&#xE897;" FontFamily="Segoe MDL2 Assets" FontSize="14" 
-                                           Foreground="{ThemeResource SecondaryTextBrush}" 
-                                           VerticalAlignment="Center" Margin="8,0,0,0"
-                                           ToolTipService.ToolTip="This will take much more disk space, but will greatly increase the speed of the process."/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Compression:" FontSize="14" Foreground="{ThemeResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ComboBox x:Name="CompressionComboBox" Height="32" Width="120" SelectedIndex="1">
+                                    <ComboBoxItem Content="Fast"/>
+                                    <ComboBoxItem Content="Maximum"/>
+                                </ComboBox>
                             </StackPanel>
                         </StackPanel>
                         <!-- Driver Directories section -->

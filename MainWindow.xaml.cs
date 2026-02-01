@@ -87,6 +87,13 @@ public sealed partial class MainWindow : Window
             if (AppWindow != null)
             {
                 AppWindow.Title = "I.D.I.O.T. - Image Driver Integration & Optimization Tool";
+                
+                // Set the window icon for taskbar preview
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "idiotLogo.ico");
+                if (File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
                 if (Microsoft.UI.Windowing.AppWindowTitleBar.IsCustomizationSupported())
                 {
                     AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
@@ -608,8 +615,7 @@ public sealed partial class MainWindow : Window
             var inputPath = InputFileTextBox.Text;
             var outputPath = OutputFileTextBox.Text;
             var driverDirs = _driverDirectories.ToArray();
-            var optimize = OptimizeCheckBox.IsChecked ?? false;
-            var deferUnmounts = DeferUnmountsCheckBox.IsChecked ?? true;
+            var useMaxCompression = CompressionComboBox.SelectedIndex == 1; // 0 = Fast, 1 = Maximum
 
             StatusTextBlock.Text = "Processing...";
             ProgressBar.IsIndeterminate = true;
@@ -638,14 +644,14 @@ public sealed partial class MainWindow : Window
                             mountedDrive = _mountedIsoDrive;
                             _logger?.LogInfo($"Using already-mounted ISO drive: {mountedDrive}:\\");
                         }
-                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedByWim, mountedDrive, deferUnmounts);
+                        await _processor.ProcessISO(inputPath, outputPath, driverDirs, useMaxCompression, cancellationToken, selectedByWim, mountedDrive);
                     }
                     else
                     {
                         var wimFileName = Path.GetFileName(inputPath);
                         if (wimFileName.Equals("boot.wim", StringComparison.OrdinalIgnoreCase))
                         { selectedVersionsList = null; _logger?.LogInfo("boot.wim detected - will process ALL indexes"); }
-                        await _processor.ProcessWIM(inputPath, outputPath, driverDirs, optimize, cancellationToken, selectedVersionsList, deferUnmounts);
+                        await _processor.ProcessWIM(inputPath, outputPath, driverDirs, useMaxCompression, cancellationToken, selectedVersionsList);
                     }
 
                     // Show cleanup status and disable cancel button during unmount phase
@@ -825,9 +831,9 @@ public sealed partial class MainWindow : Window
         OutputFileTextBox.IsEnabled = enabled;
         LogFileTextBox.IsEnabled = enabled;
         
-        // Checkboxes
-        OptimizeCheckBox.IsEnabled = enabled;
-        DeferUnmountsCheckBox.IsEnabled = enabled;
+        // Dropdowns
+        CompressionComboBox.IsEnabled = enabled;
+        ScratchDriveComboBox.IsEnabled = enabled;
         
         // List controls
         DriverDirectoriesListBox.IsEnabled = enabled;
