@@ -2,7 +2,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
-    [string]$Version = "0.4.0",
+    [string]$Version = "0.4.1",
     [switch]$SkipInstaller
 )
 
@@ -187,6 +187,7 @@ if (Test-Path $installerFile) {
     Write-Host "To test the installer:" -ForegroundColor Yellow
     Write-Host "  Run $installerFile and follow the setup wizard`n" -ForegroundColor Yellow
 }
+
 
 
 

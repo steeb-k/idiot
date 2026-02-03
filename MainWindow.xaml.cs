@@ -70,7 +70,6 @@ public sealed partial class MainWindow : Window
 
             var logsDir = Path.Combine(AppContext.BaseDirectory, "logs");
             Directory.CreateDirectory(logsDir);
-            LogFileTextBox.Text = Path.Combine(logsDir, $"injection-log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
 
             ImageSelectionButton.Tag = "ImageSelection";
             ShowSection("ImageSelection");
@@ -640,12 +639,11 @@ public sealed partial class MainWindow : Window
         }
 
         InputFileTextBox.Text = path;
-        if (string.IsNullOrWhiteSpace(OutputFileTextBox.Text))
-        {
-            var inputFile = new FileInfo(path);
-            var outputName = Path.ChangeExtension(inputFile.Name, null) + "_injected" + inputFile.Extension;
-            OutputFileTextBox.Text = Path.Combine(inputFile.DirectoryName ?? "", outputName);
-        }
+        
+        // Always update output filename when new input file is selected
+        var inputFile = new FileInfo(path);
+        var outputName = Path.ChangeExtension(inputFile.Name, null) + "_injected" + inputFile.Extension;
+        OutputFileTextBox.Text = Path.Combine(inputFile.DirectoryName ?? "", outputName);
 
         if (path.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
             await ExtractIsoFile(path);
@@ -812,14 +810,6 @@ public sealed partial class MainWindow : Window
             _driverDirectories.Remove(selected);
     }
 
-    private void BrowseLogFile_Click(object sender, RoutedEventArgs e)
-    {
-        var path = NativeFileDialog.PickSaveFile(WindowNative.GetWindowHandle(this), "Select log file",
-            Path.GetFileName(LogFileTextBox.Text), "txt", "Text files (*.txt)|*.txt|All files (*.*)|*.*");
-        if (!string.IsNullOrEmpty(path))
-            LogFileTextBox.Text = path;
-    }
-
     private void LogFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LogFilesListBox.SelectedItem is string logFile && File.Exists(logFile))
@@ -968,10 +958,12 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            if (LogFileTextBox.Text == "injection-log.txt" || !Path.IsPathRooted(LogFileTextBox.Text))
-                LogFileTextBox.Text = Path.Combine(AppContext.BaseDirectory, "logs", $"injection-log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
+            // Always generate fresh log filename based on current date/time when SQUIRT is clicked
+            var logsDir = Path.Combine(AppContext.BaseDirectory, "logs");
+            Directory.CreateDirectory(logsDir);
+            var logFilePath = Path.Combine(logsDir, $"injection-log-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
 
-            _logger = new Logger(LogFileTextBox.Text);
+            _logger = new Logger(logFilePath);
             _logger.LogInfo("=== Processing Started ===");
             _logger.LogInfo($"Input: {InputFileTextBox.Text}");
             _logger.LogInfo($"Output: {OutputFileTextBox.Text}");
@@ -1207,7 +1199,6 @@ public sealed partial class MainWindow : Window
         // Text boxes
         InputFileTextBox.IsEnabled = enabled;
         OutputFileTextBox.IsEnabled = enabled;
-        LogFileTextBox.IsEnabled = enabled;
         
         // Dropdowns
         CompressionComboBox.IsEnabled = enabled;
@@ -1221,7 +1212,6 @@ public sealed partial class MainWindow : Window
         // Browse buttons
         BrowseInputButton.IsEnabled = enabled;
         BrowseOutputButton.IsEnabled = enabled;
-        BrowseLogButton.IsEnabled = enabled;
         
         // Driver buttons
         AddDriverButton.IsEnabled = enabled;
