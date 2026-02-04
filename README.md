@@ -1,5 +1,5 @@
 # I.D.I.O.T.
-### Image Driver Integration &amp; Optimization Tool 
+### Image Design, Integration, &amp; Optimization Tool
 
 <p align="center">
   <img src="img/idiotLogo.png" alt="Idiot Logo">

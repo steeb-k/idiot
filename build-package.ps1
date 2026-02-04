@@ -69,7 +69,7 @@ Copy-Item "$publishDir\*" -Destination $portableDir -Recurse -Force
 
 # Create user-friendly README for portable version
 $readmeContent = @"
-I.D.I.O.T. - Image Driver Integration & Optimization Tool
+I.D.I.O.T. - Image Design, Integration, & Optimization Tool
 ==========================================================
 
 QUICK START

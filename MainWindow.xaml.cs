@@ -94,7 +94,7 @@ public sealed partial class MainWindow : Window
             var hwnd = WindowNative.GetWindowHandle(this);
             if (AppWindow != null)
             {
-                AppWindow.Title = "I.D.I.O.T. - Image Driver Integration & Optimization Tool";
+                AppWindow.Title = "I.D.I.O.T. - Image Design, Integration, & Optimization Tool";
                 
                 // Set the window icon for taskbar preview
                 var iconPath = Path.Combine(AppContext.BaseDirectory, "idiotLogo.ico");

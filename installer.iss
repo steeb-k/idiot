@@ -1,8 +1,8 @@
-; Inno Setup Script for I.D.I.O.T. (Image Driver Integration & Optimization Tool)
+; Inno Setup Script for I.D.I.O.T. (Image Design, Integration, & Optimization Tool)
 ; Requires Inno Setup 6.0 or later: https://jrsoftware.org/isinfo.php
 
 #define MyAppName "I.D.I.O.T."
-#define MyAppFullName "Image Driver Integration & Optimization Tool"
+#define MyAppFullName "Image Design, Integration, & Optimization Tool"
 #define MyAppVersion "0.4.1"
 #define MyAppPublisher "KZNJK"
 #define MyAppURL "https://github.com/steeb-k/idiot"
